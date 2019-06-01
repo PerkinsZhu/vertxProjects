@@ -1,27 +1,28 @@
 package com.perkins
 
-import com.perkins.handlers.BaseHandle
+import com.perkins.vertxs.CommonVerticle
+import com.perkins.vertxs.RouteVerticle
 import io.vertx.core.AbstractVerticle
-import io.vertx.core.Future
-import io.vertx.ext.web.Router
+import io.vertx.core.AsyncResult
+import io.vertx.core.logging.LoggerFactory
+
 
 class MainVerticle : AbstractVerticle() {
-    val router = createRouter()
-    override fun start(startFuture: Future<Void>) {
-        vertx.createHttpServer()
-                .requestHandler { router.accept(it) }
-                .listen(config().getInteger("http.port", 8080)) { result ->
-                    if (result.succeeded()) {
-                        startFuture.complete()
-                    } else {
-                        startFuture.fail(result.cause())
-                    }
-                }
+    val logger = LoggerFactory.getLogger(this.javaClass)
+    override fun start() {
+        val commonVertx = CommonVerticle()
+        val routeVerticle = RouteVerticle()
+        //TODO 当同时部署两个verticale的时候，第二个无法找到route，但是上传文件却可以成功的。
+//        vertx.deployVerticle(commonVertx) { completionHandler(it) }
+        vertx.deployVerticle(routeVerticle) { completionHandler(it) }
+
     }
 
-
-    private fun createRouter() = Router.router(vertx).apply {
-        get("/").handler(BaseHandle.indexHandle)
+    fun completionHandler(it: AsyncResult<String>) {
+        if (it.succeeded()) {
+            logger.info("Deployment id is: " + it.result());
+        } else {
+            logger.error("Deployment failed!");
+        }
     }
-
 }

@@ -69,3 +69,8 @@ run {
             "--on-redeploy=./gradlew classes"
     ]
 }
+
+/**
+  停止服务: vertx stop  34133243-5dfa-4ace-9221-02decee7a3ca-redeploy（run时候自动生成的ID）
+ 
+ */
