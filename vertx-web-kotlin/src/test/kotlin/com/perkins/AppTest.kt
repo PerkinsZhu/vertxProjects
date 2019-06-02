@@ -8,6 +8,10 @@ import io.vertx.core.buffer.impl.BufferImpl
 import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
+import jdk.nashorn.internal.objects.NativeArray.forEach
+import io.vertx.core.file.AsyncFile
+import io.vertx.core.file.OpenOptions
+import io.vertx.rx.java.RxHelper
 
 
 class AppTest {
@@ -51,4 +55,19 @@ class AppTest {
         })
 
     }
+    @Test
+    fun testRXJava(){
+        val vertx = Vertx.vertx()
+        val fileSystem = vertx.fileSystem()
+        fileSystem.open("uploads/data.txt", OpenOptions()) { result ->
+            println("--handle--")
+            val file = result.result()
+            val observable = RxHelper.toObservable(file)
+            observable.forEach { data ->
+                println("--observer--")
+                System.out.println("Read data: " + data.toString("UTF-8"))
+            }
+        }
+    }
+
 }
