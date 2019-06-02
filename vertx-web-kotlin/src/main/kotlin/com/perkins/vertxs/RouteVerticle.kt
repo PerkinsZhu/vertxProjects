@@ -12,6 +12,10 @@ import io.vertx.ext.web.handler.BodyHandler
 import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
+import com.sun.corba.se.spi.presentation.rmi.StubAdapter.request
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.*
 
 
 class RouteVerticle : AbstractVerticle() {
@@ -22,7 +26,9 @@ class RouteVerticle : AbstractVerticle() {
         ioPool = vertx.createSharedWorkerExecutor("my-worker-pool", 10);
         val server = vertx.createHttpServer()
         val router = Router.router(vertx)
-        router.route().handler(BodyHandler.create())
+        // 取消默认的handle，默认的handle会自动把文件存储在磁盘中，一旦读取上传的文件流后，后面就无法再取出数据了
+        // 该handle 默认对所有的请求生效
+        //router.route().handler(BodyHandler.create())
         router.get("/hello").handler {
             it.response().end("hello")
         }
@@ -41,10 +47,35 @@ class RouteVerticle : AbstractVerticle() {
                 ctx.response().write("\n")
                 ctx.response().write("Size: " + f.size())
             }
-
             ctx.response().end()
         }
 
+
+        // 无法读取出chunk数据
+//        router.post("/form2").handler(form2Handle())
+        router.post("/form2").handler {
+            val request = it.request()
+            request.setExpectMultipart(true);
+            request.uploadHandler { upload ->
+                upload.handler { chunk ->
+                    // 每个chunk在8192byte ,大概8K
+                    println("size -->" + chunk.length())
+                    //TODO 如何直接从数据流中读取数据，而不用写入磁盘？
+                    //TODO 如何实现分块上传？
+                    /**
+                     * 1、先从磁盘中读取文件分块上传到S3
+                     * 再删除磁盘文件
+                     *
+                     * 2、 做个缓存，当接受的数据量大于5M的时候提交一次
+                     */
+//                    multipartUpload("buckName","key","path")
+//                    println(chunk.toString("UTF-8"))
+                }
+                println("uploadSize--->" + upload.size())
+
+            }
+            it.response().end("save over")
+        }
 
 
         router.get("/download").handler {
@@ -141,6 +172,112 @@ class RouteVerticle : AbstractVerticle() {
             //future结束之后，判断是否成功，如果执行成功，则关闭response
             if (res.succeeded()) {
                 res.result().response().end()
+            } else {
+                logger.error("读取文件失败：", res.cause())
+            }
+
+        })
+    }
+
+    lateinit var s3: S3Client
+
+    /**
+     * 分块上传文件
+     * TODO 在workPool 中执行该操作
+     */
+    fun multipartUpload(bucketName: String, key: String, path: String) {
+        val createMultipartUploadRequest = CreateMultipartUploadRequest.builder().bucket(bucketName).key(key).build()
+        val response = s3.createMultipartUpload(createMultipartUploadRequest)
+        val uploadId = response.uploadId()
+
+        val file = FileInputStream(File(path))
+        val channel = file.channel
+        val byteBuffer = ByteBuffer.allocate(1024 * 1024 * 5)
+        var i = 1
+        var list: MutableList<CompletedPart> = ArrayList()
+        while (channel.read(byteBuffer) != -1) {
+            byteBuffer.flip()
+            val uploadPartRequest1 = UploadPartRequest.builder().bucket(bucketName).key(key).uploadId(uploadId).partNumber(i).build()
+            val etag = s3.uploadPart(uploadPartRequest1, RequestBody.fromByteBuffer(byteBuffer)).eTag()
+            val part = CompletedPart.builder().partNumber(i).eTag(etag).build()
+            list.add(part)
+            byteBuffer.clear()
+        }
+
+        val completedMultipartUpload = CompletedMultipartUpload.builder().parts(list).build()
+        val completeMultipartUploadRequest = CompleteMultipartUploadRequest.builder().bucket(bucketName).key(key).uploadId(uploadId)
+                .multipartUpload(completedMultipartUpload).build()
+        s3.completeMultipartUpload(completeMultipartUploadRequest)
+    }
+
+//     通过workPool执行上传工作
+    fun multipartUploadAsync() = Handler<RoutingContext> { context ->
+        val bucketName = ""
+        val key = ""
+        val path = ""
+        ioPool.executeBlocking<RoutingContext>({ future ->
+            val createMultipartUploadRequest = CreateMultipartUploadRequest.builder().bucket(bucketName).key(key).build()
+            val response = s3.createMultipartUpload(createMultipartUploadRequest)
+            val uploadId = response.uploadId()
+
+            val file = FileInputStream(File(path))
+            val channel = file.channel
+            val byteBuffer = ByteBuffer.allocate(1024 * 1024 * 5)
+            var i = 1
+            var list: MutableList<CompletedPart> = ArrayList()
+            while (channel.read(byteBuffer) != -1) {
+                byteBuffer.flip()
+                val uploadPartRequest1 = UploadPartRequest.builder().bucket(bucketName).key(key).uploadId(uploadId).partNumber(i).build()
+                val etag = s3.uploadPart(uploadPartRequest1, RequestBody.fromByteBuffer(byteBuffer)).eTag()
+                val part = CompletedPart.builder().partNumber(i).eTag(etag).build()
+                list.add(part)
+                byteBuffer.clear()
+            }
+            val completedMultipartUpload = CompletedMultipartUpload.builder().parts(list).build()
+            val completeMultipartUploadRequest = CompleteMultipartUploadRequest.builder().bucket(bucketName).key(key).uploadId(uploadId)
+                    .multipartUpload(completedMultipartUpload).build()
+            s3.completeMultipartUpload(completeMultipartUploadRequest)
+
+            future.complete(context)
+        }, { res ->
+            logger.info("数据读取结束")
+            //future结束之后，判断是否成功，如果执行成功，则关闭response
+            if (res.succeeded()) {
+                res.result().response().end()
+            } else {
+                logger.error("读取文件失败：", res.cause())
+            }
+
+        })
+    }
+
+
+    fun form2Handle()= Handler<RoutingContext> { context ->
+        ioPool.executeBlocking<RoutingContext>({ future ->
+            val request = context.request()
+            request.setExpectMultipart(true);
+            request.uploadHandler { upload ->
+                upload.handler { chunk ->
+                    // 每个chunk在8192byte ,大概8K
+                    println("size -->" + chunk.length())
+                    //TODO 如何直接从数据流中读取数据，而不用写入磁盘？
+                    //TODO 如何实现分块上传？
+                    /**
+                     * 先从磁盘中读取文件分块上传到S3
+                     * 再删除磁盘文件
+                     */
+//                    multipartUpload("buckName","key","path")
+//                    println(chunk.toString("UTF-8"))
+                }
+                println("uploadSize--->"+upload.size())
+
+            }
+            future.complete(context)
+        }, { res ->
+            logger.info("数据读取结束")
+            //future结束之后，判断是否成功，如果执行成功，则关闭response
+            if (res.succeeded()) {
+                res.result().response().end("save over")
             } else {
                 logger.error("读取文件失败：", res.cause())
             }
