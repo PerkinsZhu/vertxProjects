@@ -71,8 +71,8 @@ class RouteVerticle : AbstractVerticle() {
 //                    multipartUpload("buckName","key","path")
 //                    println(chunk.toString("UTF-8"))
                 }
-                println("uploadSize--->" + upload.size())
 
+                upload.endHandler{println("uploadSize--->" + upload.size())}
             }
             it.response().end("save over")
         }
