@@ -68,7 +68,7 @@ class RouteVerticle : AbstractVerticle() {
                      *
                      * 2、 做个缓存，当接受的数据量大于5M的时候提交一次
                      */
-//                    multipartUpload("buckName","key","path")
+                    multipartUpload("buckName","key","path")
 //                    println(chunk.toString("UTF-8"))
                 }
 
