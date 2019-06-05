@@ -70,4 +70,25 @@ class AppTest {
         }
     }
 
+    @Test
+    fun testString(){
+        val str:String = "   "
+        val str1 = "123"
+        println(str.isBlank())
+        println(str.isEmpty())
+        println(str.isNullOrBlank())
+        println(str.isNullOrEmpty())
+        println(str.isNotBlank())
+        val ex = RuntimeException("123456")
+        println(ex.message)
+    }
+
+
+    @Test
+    fun testLetAndOther(){
+        //TODO  测试 run、with、let、also和apply 的用法 （作用域函数）
+
+    }
+
+
 }

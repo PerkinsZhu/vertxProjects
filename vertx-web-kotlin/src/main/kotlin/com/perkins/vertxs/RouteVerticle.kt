@@ -13,6 +13,9 @@ import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import com.sun.corba.se.spi.presentation.rmi.StubAdapter.request
+import io.vertx.core.file.AsyncFile
+import io.vertx.core.streams.Pump
+import io.vertx.core.streams.WriteStream
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.*
@@ -257,6 +260,8 @@ class RouteVerticle : AbstractVerticle() {
             val request = context.request()
             request.setExpectMultipart(true);
             request.uploadHandler { upload ->
+
+//                Pump.pump(upload,)
                 upload.handler { chunk ->
                     // 每个chunk在8192byte ,大概8K
                     println("size -->" + chunk.length())

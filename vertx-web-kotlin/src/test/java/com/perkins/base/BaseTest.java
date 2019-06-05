@@ -2,9 +2,7 @@ package com.perkins.base;
 
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -33,8 +31,8 @@ public class BaseTest {
         cachedThreadPool.execute(() -> {
             try {
                 byte[] array = new byte[1024];
-                int i = 0 ;
-                while (( i = in.read(array)) != -1) {
+                int i = 0;
+                while ((i = in.read(array)) != -1) {
                     System.out.print(new String(array));
                 }
             } catch (Exception e) {
@@ -42,5 +40,16 @@ public class BaseTest {
             }
         });
         cachedThreadPool.awaitTermination(1, TimeUnit.DAYS);
+    }
+
+    @Test
+    public void testInputStream() throws FileNotFoundException {
+        InputStream inputStream = new FileInputStream(new File("D:\\zhupingjing\\testFile\\upload.txt"));
+        //TODO 分析各种流的实现机制，源码
+    }
+    @Test
+    public void testException(){
+        Exception ex = new RuntimeException("错误消息");
+        System.out.println(ex.getMessage());
     }
 }
