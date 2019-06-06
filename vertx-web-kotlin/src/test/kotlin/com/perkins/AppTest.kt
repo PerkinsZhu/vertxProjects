@@ -44,7 +44,7 @@ class AppTest {
         val buffer = Buffer.buffer()
         var i = 0
         while (i < 1000) {
-            buffer.appendString("你叫什么名字\r\n","UTF-8")
+            buffer.appendString("你叫什么名字\r\n", "UTF-8")
             i++
         }
 
@@ -55,8 +55,9 @@ class AppTest {
         })
 
     }
+
     @Test
-    fun testRXJava(){
+    fun testRXJava() {
         val vertx = Vertx.vertx()
         val fileSystem = vertx.fileSystem()
         fileSystem.open("uploads/data.txt", OpenOptions()) { result ->
@@ -71,8 +72,8 @@ class AppTest {
     }
 
     @Test
-    fun testString(){
-        val str:String = "   "
+    fun testString() {
+        val str: String = "   "
         val str1 = "123"
         println(str.isBlank())
         println(str.isEmpty())
@@ -81,14 +82,57 @@ class AppTest {
         println(str.isNotBlank())
         val ex = RuntimeException("123456")
         println(ex.message)
+
+        val str3 = "123123.sdfas"
+        println(str3.substringBeforeLast("."))
+        println(str3.substringAfterLast("."))
+
     }
 
 
     @Test
-    fun testLetAndOther(){
+    fun testLetAndOther() {
         //TODO  测试 run、with、let、also和apply 的用法 （作用域函数）
+        var name = "123456"
+        val temp = run {
+            var name = "jkkjljk"
+            println("----->" + name)
+            if (false) {
+                "nnn" //自动返回结果
+            } else {
+                100
+            }
+//            100
+        }
+        println(temp)
+        println("----->$name")
 
+        val obj = "Obj"
+        obj.run {
+            println(this)
+        }
+        with(obj){
+            println(this)
+        }
+        obj.let {
+            println(it)
+            println(this)
+        }
     }
 
+    @Test
+    fun  testLet(){
+        val str :String? = null
+        str?.let {
+            println(it)
+        }
+        val map = mutableMapOf<String,String>()
+        map.put("aaa","bbbb")
+        map.put("cccc","dddd")
+        println(map)
 
+        val temp = str ?: "aaa"
+        println(temp)
+
+    }
 }
