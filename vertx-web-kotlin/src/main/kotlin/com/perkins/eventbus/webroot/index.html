@@ -5,7 +5,7 @@
   <title>Hello CommonJS!</title>
 </head>
 <body>
-<div id="log"></div>
+
 
 <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
 <script src="//cdn.jsdelivr.net/sockjs/1.0.0/sockjs.min.js"></script>
@@ -22,7 +22,71 @@
   function sendMsg() {
     eb.send("callback","12312431")
   }
+
+  function check() {
+      var objFile = document.getElementById("fileId");
+      if (objFile.value == "") {
+          alert("不能空")
+      }
+      console.log(objFile.files[0].size); // 文件字节数
+
+      var files = $('#fileId').prop('files');//获取到文件列表
+      if (files.length == 0) {
+          alert('请选择文件');
+      } else {
+
+          // var options = DeliveryOptions().setCodecName("bytearray");
+
+          // eb.send("fileData",files[0])
+
+          console.log("文件名称---->"+files[0].name)
+          var reader = new FileReader();//新建一个FileReader
+          reader.readAsArrayBuffer(files[0])
+          // reader.readAsText(files[0], "UTF-8");//读取文件
+          reader.onload = function (evt) { //读取完文件之后会回来这里
+            /*  var fileString = evt.target.result; // 读取文件内容
+              console.log(fileString)
+              var data = {"data":fileString}
+              console.log(data)
+              var dataView = new DataView(fileString);
+              var jsond = {"data":dataView}
+              eb.send("fileData",jsond)*/
+
+              // eb.send("fileData",data,options)
+          }
+          reader.onloadend=function() {
+                // 这个事件在读取结束后，无论成功或者失败都会触发
+              if (reader.error) {
+                  console.log(reader.error);
+              } else {
+                  var result = reader.result
+                  var strData = ab2str(result)
+                  var data = {"data":strData}
+                  console.log(data)
+                  eb.send("fileData",data)
+              }
+          }
+          return;
+      }
+  }
+  function ab2str(buf) {
+      return String.fromCharCode.apply(null, new Uint16Array(buf));
+  }
 </script>
-<button onclick="sendMsg()">send</button>
+<div>
+    <button onclick="sendMsg()">send</button>
+</div>
+
+<div>
+    <div>
+        上传文件 ： <input type="file" name = "file" id = "fileId" />
+
+        <button  type = "submit" name = "btn" value = "提交" id = "btnId" onclick="check()" /> 提交
+    </div>
+</div>
+
+<div>
+    <div id="log"></div>
+</div>
 </body>
 </html>
