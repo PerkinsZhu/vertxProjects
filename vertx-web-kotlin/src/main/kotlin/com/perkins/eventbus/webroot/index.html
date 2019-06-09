@@ -66,6 +66,11 @@
                   eb.send("fileData",data)
               }
           }
+          reader.onprogress= function (item) {
+
+              console.log(item.data)
+          }
+
           return;
       }
   }

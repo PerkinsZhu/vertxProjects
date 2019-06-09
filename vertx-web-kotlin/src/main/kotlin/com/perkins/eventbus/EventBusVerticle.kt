@@ -3,11 +3,13 @@ package com.perkins.eventbus
 import com.perkins.Runner
 import com.perkins.handlers.BaseHandle
 import io.vertx.core.AbstractVerticle
+import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.eventbus.MessageConsumer
 import io.vertx.core.eventbus.impl.codecs.BufferMessageCodec
 import io.vertx.core.eventbus.impl.codecs.ByteArrayMessageCodec
+import io.vertx.core.file.OpenOptions
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.impl.WebSocketImplBase
 import io.vertx.core.json.JsonObject
@@ -63,7 +65,7 @@ class EventBusVerticle : AbstractVerticle() {
         vertx.createHttpServer().requestHandler { router.accept(it) }.listen(8080)
 
         val eb = vertx.eventBus()
-val fs = vertx.fileSystem()
+        val fs = vertx.fileSystem()
         eb.consumer<String>("callback") { msg ->
             println("body---" + msg.body())
         }
@@ -73,21 +75,37 @@ val fs = vertx.fileSystem()
             val fileName = body.getString("fileName")
             println("fileName$fileName")
             val byteArray = string.toByteArray(Charsets.UTF_16LE)
-            val filePath = "./uploads/${System.currentTimeMillis().toString()+"-"+fileName}"
+            // 注意这里文件目录需要存在
+            val filePath = "uploads/${System.currentTimeMillis().toString() + "-" + fileName}"
             println(filePath)
-            // 这里找不到路径
-            val file = File(filePath)
-            if(!file.exists()){
-                file.createNewFile()
-            }
-            fs.writeFile(filePath, Buffer.buffer(byteArray)){
-                if(it.succeeded()){
-                    println("上传文件成功")
-                }else{
-                    println("上传文件失败")
-                    it.cause().printStackTrace()
+            println(System.getProperty("vertx.cwd"))
+
+            fs.open(filePath, OpenOptions()) {
+                fs.writeFile(filePath, Buffer.buffer(byteArray)) { it ->
+                    if (it.succeeded()) {
+                        println("上传文件成功")
+                    } else {
+                        println("上传文件失败")
+                        it.cause().printStackTrace()
+                    }
                 }
             }
+            // 这里找不到路径
+            /*fs.createFile(filePath) { it ->
+                if (it.succeeded()) {
+                    fs.writeFile(filePath, Buffer.buffer(byteArray)) {
+                        if (it.succeeded()) {
+                            println("上传文件成功")
+                        } else {
+                            println("上传文件失败")
+                            it.cause().printStackTrace()
+                        }
+                    }
+                } else {
+                    println("文件创建失败")
+                    it.cause().printStackTrace()
+                }
+            }*/
         }
 
     }

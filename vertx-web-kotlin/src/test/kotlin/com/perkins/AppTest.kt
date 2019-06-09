@@ -135,4 +135,18 @@ class AppTest {
         println(temp)
 
     }
+
+    @Test
+    fun testCreatFile(){
+        val vertx = Vertx.vertx()
+        val fs = vertx.fileSystem()
+        fs.open("uploads/ssswww.txt",OpenOptions()){
+            if(it.succeeded()){
+                print(it.result())
+            }else{
+                it.cause().printStackTrace()
+            }
+        }
+    }
+
 }
