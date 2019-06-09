@@ -91,6 +91,15 @@ class EventBusVerticle : AbstractVerticle() {
                     }
                 }
             }
+
+            //TODO 实现文件的分快上传
+            /**
+             * 思路：
+             *      前端先调用接口获取分块文件ID，后端把Id和文件名做缓存
+             *      前端分批次传送数据，附带id
+             *      后端根据iD映射到文件名称，把数据追加到文件后面
+             */
+
             // 这里找不到路径
             /*fs.createFile(filePath) { it ->
                 if (it.succeeded()) {
