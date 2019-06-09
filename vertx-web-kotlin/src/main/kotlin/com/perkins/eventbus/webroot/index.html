@@ -39,7 +39,8 @@
 
           // eb.send("fileData",files[0])
 
-          console.log("文件名称---->"+files[0].name)
+          var fileName = files[0].name
+          console.log("文件名称---->"+fileName)
           var reader = new FileReader();//新建一个FileReader
           reader.readAsArrayBuffer(files[0])
           // reader.readAsText(files[0], "UTF-8");//读取文件
@@ -61,8 +62,7 @@
               } else {
                   var result = reader.result
                   var strData = ab2str(result)
-                  var data = {"data":strData}
-                  console.log(data)
+                  var data = {"fileName":fileName,"data":strData}
                   eb.send("fileData",data)
               }
           }

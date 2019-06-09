@@ -18,11 +18,11 @@ import io.vertx.ext.web.handler.StaticHandler
 import io.vertx.ext.web.handler.sockjs.BridgeOptions
 import io.vertx.ext.web.handler.sockjs.PermittedOptions
 import io.vertx.ext.web.handler.sockjs.SockJSHandler
+import java.io.File
 import java.sql.Blob
 import java.text.DateFormat
 import java.time.Instant
 import java.util.*
-
 
 
 fun main(args: Array<String>) {
@@ -37,7 +37,7 @@ class EventBusVerticle : AbstractVerticle() {
                 .addOutboundPermitted(io.vertx.ext.bridge.PermittedOptions().setAddressRegex(".*"))
                 .addInboundPermitted(io.vertx.ext.bridge.PermittedOptions().setAddressRegex(".*"))
 
-        val uploadFile = Handler<RoutingContext>{
+        val uploadFile = Handler<RoutingContext> {
             val request = it.request()
             request.params().map { BaseHandle.logger.info(it) }
             request.headers().map { BaseHandle.logger.info(it) }
@@ -50,7 +50,7 @@ class EventBusVerticle : AbstractVerticle() {
 //        val da = WebSocketImplBase()
         val ebHandler = SockJSHandler.create(vertx)
                 .bridge(opts)
-                .socketHandler{
+                .socketHandler {
                     println(it.webSession().data())
                     it.webUser()
                 }
@@ -63,36 +63,33 @@ class EventBusVerticle : AbstractVerticle() {
         vertx.createHttpServer().requestHandler { router.accept(it) }.listen(8080)
 
         val eb = vertx.eventBus()
-
-
-       val codec = ByteArrayMessageCodec()
-       println(codec.name())
-
-        eb.consumer<String>("callback"){
-            msg ->
-            println("body---"+msg.body())
+val fs = vertx.fileSystem()
+        eb.consumer<String>("callback") { msg ->
+            println("body---" + msg.body())
         }
-        val consumer = eb.consumer<JsonObject>("fileData"){
-            msg ->
-            println("fileData---"+msg.body())
+        eb.consumer<JsonObject>("fileData") { msg ->
+            val body = msg.body()
+            val string = body.getString("data")
+            val fileName = body.getString("fileName")
+            println("fileName$fileName")
+            val byteArray = string.toByteArray(Charsets.UTF_16LE)
+            val filePath = "./uploads/${System.currentTimeMillis().toString()+"-"+fileName}"
+            println(filePath)
+            // 这里找不到路径
+            val file = File(filePath)
+            if(!file.exists()){
+                file.createNewFile()
+            }
+            fs.writeFile(filePath, Buffer.buffer(byteArray)){
+                if(it.succeeded()){
+                    println("上传文件成功")
+                }else{
+                    println("上传文件失败")
+                    it.cause().printStackTrace()
+                }
+            }
         }
 
-        consumer.bodyStream().handler{
-            data ->
-            println(data)
-//            val contetn = data.getBinary("data")
-            val string = data.getString("data")
-//            println(contetn)
-            println(String(string.toByteArray(Charsets.UTF_16),Charsets.UTF_8))
-            println(String(string.toByteArray(Charsets.UTF_16BE),Charsets.UTF_8))
-            println(String(string.toByteArray(Charsets.UTF_16LE),Charsets.UTF_8))
-            print(data.javaClass)
-        }
-
-        /*vertx.setPeriodic(1000L) { t ->
-            val timestamp = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(Date.from(Instant.now()))
-            eb.send("feed", JsonObject().put("now", timestamp))
-        }*/
     }
 
 }
