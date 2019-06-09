@@ -74,9 +74,10 @@ class EventBusVerticle : AbstractVerticle() {
             val string = body.getString("data")
             val fileName = body.getString("fileName")
             println("fileName$fileName")
-            val byteArray = string.toByteArray(Charsets.UTF_16LE)
+            val byteArray = string.toByteArray(Charsets.ISO_8859_1)
+
             // 注意这里文件目录需要存在
-            val filePath = "uploads/${System.currentTimeMillis().toString() + "-" + fileName}"
+           val filePath = "uploads/${System.currentTimeMillis().toString() + "-" + fileName}"
             println(filePath)
             println(System.getProperty("vertx.cwd"))
 

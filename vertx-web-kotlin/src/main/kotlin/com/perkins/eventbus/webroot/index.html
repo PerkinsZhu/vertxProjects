@@ -42,7 +42,7 @@
           var fileName = files[0].name
           console.log("文件名称---->"+fileName)
           var reader = new FileReader();//新建一个FileReader
-          reader.readAsArrayBuffer(files[0])
+          reader.readAsBinaryString(files[0])
           // reader.readAsText(files[0], "UTF-8");//读取文件
           reader.onload = function (evt) { //读取完文件之后会回来这里
             /*  var fileString = evt.target.result; // 读取文件内容
@@ -61,8 +61,7 @@
                   console.log(reader.error);
               } else {
                   var result = reader.result
-                  var strData = ab2str(result)
-                  var data = {"fileName":fileName,"data":strData}
+                  var data = {"fileName":fileName,"data":result}
                   eb.send("fileData",data)
               }
           }
