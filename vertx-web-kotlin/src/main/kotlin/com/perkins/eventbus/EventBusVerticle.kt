@@ -1,6 +1,7 @@
 package com.perkins.eventbus
 
 import com.perkins.Runner
+import com.perkins.eventbus.handles.Handle
 import com.perkins.handlers.BaseHandle
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
@@ -34,6 +35,7 @@ fun main(args: Array<String>) {
 
 class EventBusVerticle : AbstractVerticle() {
     override fun start() {
+        val handler = Handle(vertx)
         val router = Router.router(vertx)
         val opts = BridgeOptions()
                 .addOutboundPermitted(io.vertx.ext.bridge.PermittedOptions().setAddressRegex(".*"))
@@ -62,61 +64,15 @@ class EventBusVerticle : AbstractVerticle() {
 
         router.route().handler(StaticHandler.create())
 
-        vertx.createHttpServer().requestHandler { router.accept(it) }.listen(8080)
+        vertx.createHttpServer().requestHandler { router.accept(it) }.listen(8081)
 
         val eb = vertx.eventBus()
         val fs = vertx.fileSystem()
         eb.consumer<String>("callback") { msg ->
             println("body---" + msg.body())
         }
-        eb.consumer<JsonObject>("fileData") { msg ->
-            val body = msg.body()
-            val string = body.getString("data")
-            val fileName = body.getString("fileName")
-            println("fileName$fileName")
-            val byteArray = string.toByteArray(Charsets.ISO_8859_1)
-
-            // 注意这里文件目录需要存在
-           val filePath = "uploads/${System.currentTimeMillis().toString() + "-" + fileName}"
-            println(filePath)
-            println(System.getProperty("vertx.cwd"))
-
-            fs.open(filePath, OpenOptions()) {
-                fs.writeFile(filePath, Buffer.buffer(byteArray)) { it ->
-                    if (it.succeeded()) {
-                        println("上传文件成功")
-                    } else {
-                        println("上传文件失败")
-                        it.cause().printStackTrace()
-                    }
-                }
-            }
-
-            //TODO 实现文件的分快上传
-            /**
-             * 思路：
-             *      前端先调用接口获取分块文件ID，后端把Id和文件名做缓存
-             *      前端分批次传送数据，附带id
-             *      后端根据iD映射到文件名称，把数据追加到文件后面
-             */
-
-            // 这里找不到路径
-            /*fs.createFile(filePath) { it ->
-                if (it.succeeded()) {
-                    fs.writeFile(filePath, Buffer.buffer(byteArray)) {
-                        if (it.succeeded()) {
-                            println("上传文件成功")
-                        } else {
-                            println("上传文件失败")
-                            it.cause().printStackTrace()
-                        }
-                    }
-                } else {
-                    println("文件创建失败")
-                    it.cause().printStackTrace()
-                }
-            }*/
-        }
+        eb.consumer<JsonObject>("fileData", handler.fileData)
+        eb.consumer<JsonObject>("mulitUpload", handler.mulitUpload)
 
     }
 
