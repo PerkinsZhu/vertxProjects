@@ -72,7 +72,9 @@ class EventBusVerticle : AbstractVerticle() {
             println("body---" + msg.body())
         }
         eb.consumer<JsonObject>("fileData", handler.fileData)
+        eb.consumer<JsonObject>("startMulitUpload", handler.startMulitUpload)
         eb.consumer<JsonObject>("mulitUpload", handler.mulitUpload)
+        eb.consumer<String>("mulitUploadWithBase64", handler.mulitUploadWithBase64)
 
     }
 

@@ -78,6 +78,9 @@
       return String.fromCharCode.apply(null, new Uint16Array(buf));
   }
 
+  //分块发送文件
+
+  var contentSize = 10000
   function mulitUpload() {
       var objFile = document.getElementById("fileId");
       if (objFile.value == "") {
@@ -99,22 +102,114 @@
               if (reader.error) {
                   console.log(reader.error);
               } else {
-                  var buffer = reader.result
-                  var view= new Int8Array(buffer)
-                  var array =Array.prototype.slice.call(view);
-                  var data = {"fileName":fileName,"data":array}
-                  eb.send("mulitUpload",data)
+                  var header = {"AAA":"aaaa"}
+
+                  var fileResult = reader.result
+                  var length = fileResult.byteLength
+                  var blobNum = Math.ceil(length / contentSize)
+                  var data = {"fileName": fileName, "blobCount": blobNum}
+                  eb.send("startMulitUpload",data,header,function (obj,json) {
+                      let fileId = json.body // 获取分块文件Id
+                      console.log("fileId->"+fileId)
+                      // sendBufferDataWithJson(fileResult, fileId,blobNum); // 循环发送数据块
+                      sendBufferDataWithBase64(fileResult, fileId,blobNum); // 循环发送数据块
+                  })
               }
           }
           reader.onprogress= function (item) {
 
               console.log(item.data)
           }
+          reader.onload = function (e) {
+              console.log(e.target);
+          }
 
           return;
       }
   }
 
+  function sendBufferDataWithJson(buffer, fileId,blobNum) {
+      var length = buffer.byteLength
+      for (let i = 0; i < blobNum; i++) {
+          var start = i * contentSize
+          var end = (i + 1) * contentSize
+          if (end > length) {
+              end = length
+          }
+          console.log(start + "---" + end)
+          var blogBuffer = buffer.slice(start, end)
+          var view = new Int8Array(blogBuffer)
+          var array = Array.prototype.slice.call(view);
+          var data = {"fileId": fileId, "data": array}
+          console.log("array"+data)
+
+          eb.send("mulitUploadWithBase64", "123456456")
+      }
+  }
+
+
+  function mulitUploadWithBase64() {
+      var objFile = document.getElementById("fileId");
+      if (objFile.value == "") {
+          alert("不能空")
+      }
+      console.log(objFile.files[0].size); // 文件字节数
+
+      var files = $('#fileId').prop('files');//获取到文件列表
+      if (files.length == 0) {
+          alert('请选择文件');
+      } else {
+
+          var fileName = files[0].name
+          console.log("文件名称---->"+fileName)
+          var reader = new FileReader();//新建一个FileReader
+          reader.readAsDataURL(files[0])
+          reader.onloadend=function() {
+              // 这个事件在读取结束后，无论成功或者失败都会触发
+              if (reader.error) {
+                  console.log(reader.error);
+              } else {
+                  var header = {"AAA":"aaaa"}
+                  var fileResult = reader.result
+                  var length = fileResult.length
+                  var blobCount = Math.ceil(length / contentSize)
+                  var data = {"fileName":fileName,"blobCount":blobCount}
+
+                  eb.send("startMulitUpload",data,header,function (obj,json) {
+                      let fileId = json.body // 获取分块文件Id
+                      sendBufferDataWithBase64(fileResult, fileId,blobCount); // 循环发送数据块
+                  })
+              }
+          }
+          reader.onprogress= function (item) {
+
+              console.log(item.data)
+          }
+          reader.onload = function (e) {
+              console.log(e.target);
+          }
+
+          return;
+      }
+  }
+
+  function sendBufferDataWithBase64(fileData, fileId,blobNum) {
+      var length = fileData.length
+      for (let i = 0; i < blobNum; i++) {
+          var start = i * contentSize
+          var end = (i + 1) * contentSize
+          if (end > length) {
+              end = length
+          }
+          console.log(start + "---" + end)
+          var sendFile = fileData.substring(start, end)
+          var header = {"fileId": fileId, "currentBlogCount": (i + 1), "position": (i * contentSize)}
+          eb.send("mulitUploadWithBase64",sendFile,header,function (obj,json) {
+              let result = json.body // 获取分块文件Id
+              console.log("发送数据块结果:" + result)
+          })
+      }
+  }
 </script>
 <div>
     <button onclick="sendMsg()">send</button>
@@ -124,7 +219,7 @@
     <div>
         上传文件 ： <input type="file" name = "file" id = "fileId" />
 
-        <button  type = "submit" name = "btn" value = "提交" id = "btnId" onclick="mulitUpload()" /> 提交
+        <button  type = "submit" name = "btn" value = "提交" id = "btnId" onclick="mulitUploadWithBase64()" /> 提交
     </div>
 </div>
 

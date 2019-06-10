@@ -1,5 +1,6 @@
 package com.perkins
 
+import com.perkins.util.Base64Utils
 import org.junit.Test
 import sun.security.provider.certpath.Vertex
 import io.vertx.core.Vertx
@@ -111,7 +112,7 @@ class AppTest {
         obj.run {
             println(this)
         }
-        with(obj){
+        with(obj) {
             println(this)
         }
         obj.let {
@@ -121,14 +122,14 @@ class AppTest {
     }
 
     @Test
-    fun  testLet(){
-        val str :String? = null
+    fun testLet() {
+        val str: String? = null
         str?.let {
             println(it)
         }
-        val map = mutableMapOf<String,String>()
-        map.put("aaa","bbbb")
-        map.put("cccc","dddd")
+        val map = mutableMapOf<String, String>()
+        map.put("aaa", "bbbb")
+        map.put("cccc", "dddd")
         println(map)
 
         val temp = str ?: "aaa"
@@ -137,16 +138,56 @@ class AppTest {
     }
 
     @Test
-    fun testCreatFile(){
+    fun testCreatFile() {
         val vertx = Vertx.vertx()
         val fs = vertx.fileSystem()
-        fs.open("uploads/ssswww.txt",OpenOptions()){
-            if(it.succeeded()){
+        fs.open("uploads/ssswww.txt", OpenOptions()) {
+            if (it.succeeded()) {
                 print(it.result())
-            }else{
+            } else {
                 it.cause().printStackTrace()
             }
         }
     }
 
+
+    @Test
+    fun testWriteFileWithAppend() {
+        val vertx = Vertx.vertx()
+        val fs = vertx.fileSystem()
+        val filePath = "uploads/hello.txt"
+        val option = OpenOptions()
+        option.isAppend = true
+        //TODO 如何追加文件？
+        fs.open(filePath, option) { res ->
+            if (res.succeeded()) {
+                fs.writeFile(filePath, Buffer.buffer("Hello")) { result ->
+                    println(result)
+                    if (result.succeeded()) {
+                        println("File written")
+                    } else {
+                        System.err.println("Oh oh ..." + result.cause())
+                    }
+                }
+            } else {
+                res.cause().printStackTrace()
+            }
+        }
+        Thread.sleep(100000)
+    }
+
+
+    @Test
+    fun getProjectPath() {
+        System.out.println(System.getProperty("user.dir"))
+    }
+
+    @Test
+    fun testFileBase64() {
+        val data = Base64Utils.encodeFile(File("D:\\zhupingjing\\testFile\\Unicode编码表.png"))
+        println(data)
+        val result = Base64Utils.decode(data)
+//        println(java.lang.String(result, "UTF-8"))
+//        Base64Utils.decodeFile(data.toString(), File("D:\\zhupingjing\\testFile\\Unicode编码表new.png"))
+    }
 }
