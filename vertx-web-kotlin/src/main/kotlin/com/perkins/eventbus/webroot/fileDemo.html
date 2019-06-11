@@ -36,7 +36,7 @@
                     var length = binaryString.length
                     var blobCount = Math.ceil(length / contentSize)  //计算分块的数量
 
-                    var data = {"fileName": fileName, "blobCount": blobCount} //header信息存储文件metada
+                    var data = {"fileName": fileName, "blobCount": blobCount, "contentSize": contentSize} //header信息存储文件metada
                     eb.send("startMulitUpload", data, header, function (obj, json) {  //发送startMulitUpload消息，通知后台服务准备开始分块上传文件
                         var data = json.body
                         if(data.code == 0){
@@ -65,7 +65,7 @@
 
             var currentData = binaryString.substring(start, end) //此次传输的数据
             var base64Data = window.btoa(currentData); // 二进制string编码为base64
-            var header = {"fileId": fileId, "currentBlogCount": (i + 1), "position": (i * contentSize)} // header中存储当前分块信息
+            var header = {"fileId": fileId, "currentBlogNum": (i + 1)} // header中存储当前分块信息
 
             eb.send("mulitUploadWithBase64", base64Data, header, function (obj, json) { //开始上传数据
                 let result = json.body // 服务器回复上传结果

@@ -54,16 +54,19 @@ class Handle(vertx: Vertx) {
         val body = msg.body()
         val fileName = body.getString("fileName")
         val blobCount = body.getInteger("blobCount")
+        val contentSize = body.getLong("contentSize")
         val fileId = ObjectId.get().toString() + "-" + fileName //生成唯一文件名
 
         //缓存当前文件基本信息
         val meatData = JsonObject()
         meatData.put("fileName", fileName)
         meatData.put("blobCount", blobCount)
+        meatData.put("contentSize", contentSize)
         fileIdMap.put(fileId, meatData)
 
         //缓存当前文件的asyFile对象
         val options = OpenOptions()
+        // 这里需要阻塞方式打开文件，不然有可能会导致数据块提交上来，但是文件还没有打开
         val asyFile = fs.openBlocking("uploads/$fileId", options)
         asyFile.exceptionHandler {
             logger.info("文件操作异常", it)
@@ -139,9 +142,8 @@ class Handle(vertx: Vertx) {
 
         val header = msg.headers()
         val fileId = header["fileId"]
-        val position = header["position"].toLong()
 
-        val currentBlogCount = header["currentBlogCount"]
+        val currentBlogNum = header["currentBlogNum"]
 
         val fileMetaData = fileIdMap.get(fileId)
         val asyncFile = fileIdToFile[fileId]
@@ -152,16 +154,28 @@ class Handle(vertx: Vertx) {
         } else {
             val fileName = fileMetaData.getString("fileName")
             val blobCount = fileMetaData.getInteger("blobCount")
+            val contentSize = fileMetaData.getLong("contentSize")
 
-            logger.debug("fileName:$fileName,blobCount:$blobCount,currentBlogCount:$currentBlogCount")
+            logger.debug("fileName:$fileName,blobCount:$blobCount,currentBlogCount:$currentBlogNum")
             val byteArray = Base64Utils.decode(dataBody)
 
             asyncFile?.let {
-                logger.debug("=============共 $blobCount 块数据，开始写入第$currentBlogCount 块数据=============")
-                it.write(Buffer.buffer(byteArray))
+                logger.debug("=============共 $blobCount 块数据，开始写入第$currentBlogNum 块数据=============")
+                // 循环按照顺序写入
+                // it.write(Buffer.buffer(byteArray))
+                // 指定写入位置，可以实现并发上传
+                val position = ((currentBlogNum.toInt() - 1) * contentSize)
+                it.write(Buffer.buffer(byteArray), position) {
+                    if (it.succeeded()) {
+                        logger.info("第 $currentBlogNum 块数据写入 $position 成功")
+                    } else {
+                        logger.error("第 $currentBlogNum 块数据写入 $position 失败")
+                    }
+                }
+
                 it.flush()
-                logger.debug("=============第$currentBlogCount 块数据写入结束=============")
-                if (currentBlogCount == blobCount.toString()) {
+                logger.debug("=============第$currentBlogNum 块数据写入结束=============")
+                if (currentBlogNum == blobCount.toString()) {
                     logger.debug("最后一块数据写入完成，文件传输结束，关闭数据流")
                     asyncFile.close()
                     //清空缓存
@@ -172,7 +186,7 @@ class Handle(vertx: Vertx) {
         }
 
         val data = JsonObject()
-        val result = getResult(data, 0, "第$currentBlogCount 块文件上传成功")
+        val result = getResult(data, 0, "第$currentBlogNum 块文件上传成功")
         msg.reply(result)
     }
 

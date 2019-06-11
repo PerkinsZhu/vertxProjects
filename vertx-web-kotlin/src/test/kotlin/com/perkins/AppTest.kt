@@ -16,11 +16,12 @@ import io.vertx.rx.java.RxHelper
 
 
 class AppTest {
-
+    val vertx = Vertx.vertx()
+    val fs = vertx.fileSystem()
     @Test
     fun testInputStream() {
         val file = FileInputStream(File("uploads/0644d274-c987-499b-8286-8d72105b15e1"))
-        val vertx = Vertx.vertx()
+
         val fs = vertx.fileSystem()
         val channel = file.channel
         val buffer = Buffer.buffer()
@@ -190,5 +191,70 @@ class AppTest {
         println(result.size)
 //        println(java.lang.String(result, "UTF-8"))
 //        Base64Utils.decodeFile(data.toString(), File("D:\\zhupingjing\\testFile\\Unicode编码表new.png"))
+    }
+
+    @Test
+    fun writeFileByThread() {
+        val executor = vertx.createSharedWorkerExecutor("write file")
+//        val byteArray = FileInputStream(File("D:\\zhupingjing\\testFile\\Unicode编码表.png"))
+        val list = mutableListOf<String>()
+        for (i in 0..9) {
+            list.add("hello 你好 - $i")
+        }
+
+        val filePath = "D:\\zhupingjing\\testFile\\datatest.txt"
+        val openOptions = OpenOptions()
+//        openOptions.isAppend = true
+
+        //TODO  测试线程开在哪里？ 是仅仅并发处理write操作就可以吗？
+        fs.open(filePath, openOptions) {
+            if (it.succeeded()) {
+                println("打开文件成功")
+                var endCount = 0
+                val asyncFile = it.result()
+                list.forEachIndexed { index, value ->
+                    Thread(Runnable {
+                        println("处理-- $value")
+                        println("java 线程--->"+Thread.currentThread().name)
+                        try {
+                            if (index % 2 == 0) {
+                                Thread.sleep(1000)
+                            }
+                            val position = (value.toByteArray().size * index)
+                            asyncFile.write(Buffer.buffer(value), position.toLong()) {
+                                println("file 线程--->"+Thread.currentThread().name)
+                                endCount += 1
+                                println("---写入结束--$endCount")
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }).start()
+                }
+                println("线程开启结束")
+                asyncFile.endHandler {
+                    println("关闭文件操作对象")
+                    asyncFile.close()
+                }
+
+                println("open 线程--->"+Thread.currentThread().name)
+             /* while(endCount != 10){
+                    这里会把verxt线程阻塞掉，导致所有的handle无法进行处理。，
+                }
+                asyncFile.close()*/
+            } else {
+                it.cause().printStackTrace()
+            }
+        }
+
+        Thread.sleep(1000000)
+    }
+
+
+
+    @Test
+    fun  testStringNull(){
+        val name :String? = "123"
+        println((name ?: "asddfgds"))
     }
 }
