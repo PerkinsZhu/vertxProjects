@@ -80,7 +80,7 @@
 
   //分块发送文件
 
-  var contentSize = 10000
+  var contentSize = 30000
   function mulitUpload() {
       var objFile = document.getElementById("fileId");
       if (objFile.value == "") {
@@ -163,12 +163,18 @@
           var fileName = files[0].name
           console.log("文件名称---->"+fileName)
           var reader = new FileReader();//新建一个FileReader
-          reader.readAsDataURL(files[0])
+          reader.readAsBinaryString(files[0])
           reader.onloadend=function() {
               // 这个事件在读取结束后，无论成功或者失败都会触发
               if (reader.error) {
                   console.log(reader.error);
               } else {
+
+               /*   var fileResult = reader.result
+                  var length = fileResult.byteLength
+                  var blobCount = Math.ceil(length / contentSize)*/
+
+
                   var header = {"AAA":"aaaa"}
                   var fileResult = reader.result
                   var length = fileResult.length
@@ -201,10 +207,12 @@
           if (end > length) {
               end = length
           }
-          console.log(start + "---" + end)
+          console.log("截取数据块范围:" + start + "---" + end)
           var sendFile = fileData.substring(start, end)
+          var base64Data = window.btoa(sendFile); // 二进制string编码为base64
+
           var header = {"fileId": fileId, "currentBlogCount": (i + 1), "position": (i * contentSize)}
-          eb.send("mulitUploadWithBase64",sendFile,header,function (obj,json) {
+          eb.send("mulitUploadWithBase64", base64Data, header, function (obj, json) {
               let result = json.body // 获取分块文件Id
               console.log("发送数据块结果:" + result)
           })

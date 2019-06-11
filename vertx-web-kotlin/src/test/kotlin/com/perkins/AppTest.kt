@@ -185,8 +185,9 @@ class AppTest {
     @Test
     fun testFileBase64() {
         val data = Base64Utils.encodeFile(File("D:\\zhupingjing\\testFile\\Unicode编码表.png"))
-        println(data)
+//        println(data)
         val result = Base64Utils.decode(data)
+        println(result.size)
 //        println(java.lang.String(result, "UTF-8"))
 //        Base64Utils.decodeFile(data.toString(), File("D:\\zhupingjing\\testFile\\Unicode编码表new.png"))
     }

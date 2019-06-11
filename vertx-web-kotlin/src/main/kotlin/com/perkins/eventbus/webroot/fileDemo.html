@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>文件上传</title>
+</head>
+<body>
+
+
+<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+<script src="//cdn.jsdelivr.net/sockjs/1.0.0/sockjs.min.js"></script>
+<script src="vertx-eventbus.js"></script>
+<script>
+    var eb = new EventBus('/eventbus/');
+
+    //分块发送文件
+    var contentSize = 30000 //每次发送的二进制数据长度
+
+    function mulitUploadWithBase64() {
+        var files = $('#fileId').prop('files');//获取到文件列表
+        if (files.length == 0) {
+            alert('请选择文件');
+        } else {
+
+            var fileName = files[0].name
+            console.log("上传文件名称---->" + fileName)
+            var reader = new FileReader();//新建一个FileReader
+            reader.readAsBinaryString(files[0]) //按照二进制字符串读取
+            reader.onloadend = function () {
+                // 这个事件在读取结束后，无论成功或者失败都会触发
+                if (reader.error) {
+                    console.log(reader.error);
+                } else {
+                    var header = {"someKey": "someData"} // 设置message的header
+                    var binaryString = reader.result //获取读取出的文件的二进制字符串
+                    var length = binaryString.length
+                    var blobCount = Math.ceil(length / contentSize)  //计算分块的数量
+
+                    var data = {"fileName": fileName, "blobCount": blobCount} //header信息存储文件metada
+                    eb.send("startMulitUpload", data, header, function (obj, json) {  //发送startMulitUpload消息，通知后台服务准备开始分块上传文件
+                        var data = json.body
+                        if(data.code == 0){
+                            let fileId = data.data.fileId // 后台返回该文件的唯一名称(文件Id)
+                            sendBufferDataWithBase64(binaryString, fileId, blobCount); // 循环发送数据块
+                        }else{
+                            console.log("初始化上传文件失败")
+                        }
+                    })
+                }
+            }
+        }
+    }
+
+    function sendBufferDataWithBase64(binaryString, fileId, blobNum) {
+        var length = binaryString.length
+        for (let i = 0; i < blobNum; i++) { // 循环发送数据块
+
+            //计算每次分块的范围
+            var start = i * contentSize
+            var end = (i + 1) * contentSize
+            if (end > length) {
+                end = length
+            }
+            console.log("截取数据块范围:" + start + "---" + end)
+
+            var currentData = binaryString.substring(start, end) //此次传输的数据
+            var base64Data = window.btoa(currentData); // 二进制string编码为base64
+            var header = {"fileId": fileId, "currentBlogCount": (i + 1), "position": (i * contentSize)} // header中存储当前分块信息
+
+            eb.send("mulitUploadWithBase64", base64Data, header, function (obj, json) { //开始上传数据
+                let result = json.body // 服务器回复上传结果
+                console.log("发送数据块结果:" + result.msg)
+            })
+        }
+    }
+</script>
+<div style="text-align:center;">
+    文件分块上传
+</div>
+<br>
+<HR align=center width=300 color=#987cb9 SIZE=1>
+<br>
+<div>
+    <div>
+        上传文件 ： <input type="file" name="file" id="fileId"/>
+
+        <button type="submit" name="btn" value="提交" id="btnId" onclick="mulitUploadWithBase64()"/>
+        提交
+    </div>
+</div>
+
+<div>
+    <div id="log"></div>
+</div>
+</body>
+</html>

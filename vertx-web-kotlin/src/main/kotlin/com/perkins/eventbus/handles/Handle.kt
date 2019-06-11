@@ -9,15 +9,17 @@ import io.vertx.core.file.AsyncFile
 import io.vertx.core.file.OpenOptions
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.LoggerFactory
+import org.bson.types.ObjectId
 import java.io.File
 import java.io.FileOutputStream
 
 class Handle(vertx: Vertx) {
     val logger = LoggerFactory.getLogger(this.javaClass)
-
+    val executor = vertx.createSharedWorkerExecutor("myWorker")
     val fs = vertx.fileSystem()
-    //上传完成之后清除缓存数据
-    // 超时之后清除缓存
+    // TODO 上传完成之后清除缓存数据
+    //TODO 超时之后清除缓存
+    //TODO 实现并发存储
     val fileIdMap = mutableMapOf<String, JsonObject>()
     val fileIdToFile = mutableMapOf<String, AsyncFile>()
 
@@ -47,25 +49,50 @@ class Handle(vertx: Vertx) {
     }
 
 
-    // 获取分块上传的文件ID
+    // 开始进行分块上传，获取分块上传的文件ID
     val startMulitUpload = Handler<Message<JsonObject>> { msg ->
         val body = msg.body()
         val fileName = body.getString("fileName")
         val blobCount = body.getInteger("blobCount")
-        val fileId = System.nanoTime().toString() + "-" + fileName
+        val fileId = ObjectId.get().toString() + "-" + fileName //生成唯一文件名
+
+        //缓存当前文件基本信息
         val meatData = JsonObject()
         meatData.put("fileName", fileName)
         meatData.put("blobCount", blobCount)
         fileIdMap.put(fileId, meatData)
+
+        //缓存当前文件的asyFile对象
         val options = OpenOptions()
-        options.setAppend(true)
         val asyFile = fs.openBlocking("uploads/$fileId", options)
         asyFile.exceptionHandler {
             logger.info("文件操作异常", it)
         }
         fileIdToFile.put(fileId, asyFile)
-        msg.reply(fileId)
+
+        //回复客户端 文件Id(新文件名)
+        val data = JsonObject()
+        data.put("fileId", fileId)
+        val result = getResult(data, 0)
+        msg.reply(result)
     }
+
+    private fun getResult(data: JsonObject, code: Int, msg: String? = null): JsonObject {
+        val result = JsonObject()
+        result.put("code", code)
+        if (msg.isNullOrBlank()) {
+            val message = when (code) {
+                0 -> "处理成功"
+                else -> "处理失败"
+            }
+            result.put("msg", message)
+        } else {
+            result.put("msg", msg)
+        }
+        result.put("data", data)
+        return result
+    }
+
     val mulitUpload = Handler<Message<JsonObject>> { msg ->
         //TODO 实现文件的分快上传
         /**
@@ -104,55 +131,78 @@ class Handle(vertx: Vertx) {
         }
     }
 
-    var stringBuffer = Buffer.buffer()
+    var allDataBuffer = Buffer.buffer()
 
+    //接收分块文件数据。二进制数据按照base64进行编码
     val mulitUploadWithBase64 = Handler<Message<String>> { msg ->
-        val body = msg.body()
-        val dataBody = body.substringAfterLast(",")
+        val dataBody = msg.body()
 
         val header = msg.headers()
         val fileId = header["fileId"]
         val position = header["position"].toLong()
+
         val currentBlogCount = header["currentBlogCount"]
 
         val fileMetaData = fileIdMap.get(fileId)
         val asyncFile = fileIdToFile[fileId]
 
-        if (fileMetaData == null) {
-            throw  RuntimeException("未找到文件的metadata数据")
+        if (fileMetaData == null || asyncFile == null) {
+            logger.error("未找到文件的metadata数据或AsyncFile对象")
+            throw  RuntimeException("文件初始化异常")
         } else {
             val fileName = fileMetaData.getString("fileName")
             val blobCount = fileMetaData.getInteger("blobCount")
-            logger.info("fileName:$fileName,blobCount:$blobCount,currentBlogCount:$currentBlogCount")
 
+            logger.debug("fileName:$fileName,blobCount:$blobCount,currentBlogCount:$currentBlogCount")
             val byteArray = Base64Utils.decode(dataBody)
 
-            logger.info("asyncFile$asyncFile")
             asyncFile?.let {
-                logger.info("=============开始写入第$currentBlogCount 块数据=============$position")
-                //TODO 这里写文件数据会覆盖掉
+                logger.debug("=============共 $blobCount 块数据，开始写入第$currentBlogCount 块数据=============")
                 it.write(Buffer.buffer(byteArray))
-                /*asyFile.write(Buffer.buffer(byteArray),position){}*/
                 it.flush()
-                logger.info("=============第$currentBlogCount 块数据写入结束=============")
+                logger.debug("=============第$currentBlogCount 块数据写入结束=============")
                 if (currentBlogCount == blobCount.toString()) {
-                    logger.info("文件传输结束，关闭数据流")
+                    logger.debug("最后一块数据写入完成，文件传输结束，关闭数据流")
                     asyncFile.close()
+                    //清空缓存
                     fileIdToFile.remove(fileId)
                     fileIdMap.remove(fileId)
                 }
             }
+        }
 
-            msg.reply("$currentBlogCount upload success")
+        val data = JsonObject()
+        val result = getResult(data, 0, "第$currentBlogCount 块文件上传成功")
+        msg.reply(result)
+    }
+
+    // 用来测试寸，一次性存储所有的数据
+    private fun saveToFileOnce(fileId: String?) {
+        // 数据接收完成之后一次性写入一个新的文件
+        val openOptions = OpenOptions()
+        fs.open("uploads/new-$fileId", openOptions) {
+            if (it.succeeded()) {
+                val asyFile = it.result()
+                val byteArray = Base64Utils.decode(allDataBuffer.toString())
+                asyFile.write(Buffer.buffer(byteArray), 0) {
+                    //TODO 如何关闭文件流
+                    asyFile.close()
+                }
+            }
         }
     }
+}
 
-    val projectPath = System.getProperty("user.dir")
+val projectPath = System.getProperty("user.dir") + "/vertx-web-kotlin"
 
-    fun writeDataToFile(filePath: String, data: ByteArray) {
-        val fileInputStream = FileOutputStream(File(projectPath + File.separator + filePath))
-        fileInputStream.write(data)
-        fileInputStream.close()
-
+fun writeDataToFile(filePath: String, data: ByteArray) {
+    val file = File(projectPath + File.separator + filePath)
+    println(file.absolutePath)
+    if (!file.exists()) {
+        file.createNewFile()
     }
+    val fileInputStream = FileOutputStream(file, true)
+    fileInputStream.write(data)
+    fileInputStream.close()
+
 }
