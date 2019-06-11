@@ -28,9 +28,9 @@ class MainVerticle : AbstractVerticle() {
 //        vertx.deployVerticle(commonVertx) { completionHandler(it) }
 
 //        ========================eventbus =========
-        val appendable = EventBusVerticle()
+        val eventBusVerticle = EventBusVerticle()
 
-        vertx.deployVerticle(appendable,options) { completionHandler(it,startFuture) }
+        vertx.deployVerticle(commonVertx, options) { completionHandler(it, startFuture) }
 
     }
 

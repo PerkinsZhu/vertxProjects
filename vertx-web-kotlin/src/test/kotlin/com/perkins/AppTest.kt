@@ -257,4 +257,20 @@ class AppTest {
         val name :String? = "123"
         println((name ?: "asddfgds"))
     }
+
+    @Test
+    fun transformBucketName() {
+        val realBucketName:String = "kkkl-dev"
+
+//        realBucketName.split("-".toRegex()).forEach{println(it)}
+
+        val result = realBucketName.split("-".toRegex()).map {
+            val firstChar = it.first()
+            val temp = it.replaceFirst(firstChar, firstChar.toUpperCase())
+            println(temp)
+            temp
+        }.joinToString("")
+
+        println(result)
+    }
 }

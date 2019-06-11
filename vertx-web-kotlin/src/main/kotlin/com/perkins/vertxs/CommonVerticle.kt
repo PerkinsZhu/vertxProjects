@@ -13,7 +13,7 @@ class CommonVerticle : AbstractVerticle() {
         router.route().handler(BodyHandler.create())
         vertx.createHttpServer()
                 .requestHandler { router.accept(it) }
-                .listen(config().getInteger("http.port", 8080)) { result ->
+                .listen(config().getInteger("http.port", 8082)) { result ->
                     if (result.succeeded()) {
                         startFuture.complete()
                     } else {
@@ -28,6 +28,9 @@ class CommonVerticle : AbstractVerticle() {
         get("/").handler(BaseHandle.indexHandle)
         post("/json").handler(BaseHandle.jsonHandle)
         post("/uploadFile").handler(BaseHandle.uploadFile)
+        get("/redirect/:key").handler(BaseHandle.redirectHandle)
+        get("/path1/:key/bucketName").handler(BaseHandle.path1)
+        get("/path2/:key").handler(BaseHandle.path2)
     }
 
 }
