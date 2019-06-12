@@ -37,12 +37,17 @@
                     var blobCount = Math.ceil(length / contentSize)  //计算分块的数量
 
                     var data = {"fileName": fileName, "blobCount": blobCount, "contentSize": contentSize} //header信息存储文件metada
-                    eb.send("startMulitUpload", data, header, function (obj, json) {  //发送startMulitUpload消息，通知后台服务准备开始分块上传文件
+                    //发送startMulitUpload消息，通知后台服务准备开始分块上传文件
+                    // 通过磁盘做中转发送到S3
+                    // eb.send("startMulitUpload", data, header, function (obj, json) {
+                    //发送startMulitUpload消息，通知后台服务准备开始分块上传文件
+                    // 通过inputStream直接上传到S3
+                    eb.send("startMulitUploadToS3", data, header, function (obj, json) {
                         var data = json.body
-                        if(data.code == 0){
+                        if (data.code == 0) {
                             let fileId = data.data.fileId // 后台返回该文件的唯一名称(文件Id)
                             sendBufferDataWithBase64(binaryString, fileId, blobCount); // 循环发送数据块
-                        }else{
+                        } else {
                             console.log("初始化上传文件失败")
                         }
                     })
@@ -67,7 +72,10 @@
             var base64Data = window.btoa(currentData); // 二进制string编码为base64
             var header = {"fileId": fileId, "currentBlogNum": (i + 1)} // header中存储当前分块信息
 
-            eb.send("mulitUploadWithBase64", base64Data, header, function (obj, json) { //开始上传数据
+            // 通过磁盘上传
+            // eb.send("mulitUploadWithBase64", base64Data, header, function (obj, json) { //开始上传数据
+            //通过inputStream上传
+            eb.send("mulitUploadWithBase64AndSendToS3", base64Data, header, function (obj, json) { //开始上传数据
                 let result = json.body // 服务器回复上传结果
                 console.log("发送数据块结果:" + result.msg)
             })

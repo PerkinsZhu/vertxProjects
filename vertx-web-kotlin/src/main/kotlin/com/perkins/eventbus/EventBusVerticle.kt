@@ -75,6 +75,8 @@ class EventBusVerticle : AbstractVerticle() {
         eb.consumer<JsonObject>("startMulitUpload", handler.startMulitUpload)
         eb.consumer<JsonObject>("mulitUpload", handler.mulitUpload)
         eb.consumer<String>("mulitUploadWithBase64", handler.mulitUploadWithBase64)
+        eb.consumer<JsonObject>("startMulitUploadToS3", handler.startMulitUploadToS3)
+        eb.consumer<String>("mulitUploadWithBase64AndSendToS3", handler.mulitUploadWithBase64AndSendToS3)
 
     }
 
