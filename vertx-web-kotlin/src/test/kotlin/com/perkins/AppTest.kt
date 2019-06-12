@@ -1,5 +1,8 @@
 package com.perkins
 
+import com.amazonaws.services.s3.model.PartETag
+import com.perkins.awss3.S3Service
+import com.perkins.common.PropertiesUtil
 import com.perkins.util.Base64Utils
 import org.junit.Test
 import sun.security.provider.certpath.Vertex
@@ -13,6 +16,12 @@ import jdk.nashorn.internal.objects.NativeArray.forEach
 import io.vertx.core.file.AsyncFile
 import io.vertx.core.file.OpenOptions
 import io.vertx.rx.java.RxHelper
+import java.io.ByteArrayInputStream
+import java.io.FileOutputStream
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 
 class AppTest {
@@ -215,14 +224,14 @@ class AppTest {
                 list.forEachIndexed { index, value ->
                     Thread(Runnable {
                         println("处理-- $value")
-                        println("java 线程--->"+Thread.currentThread().name)
+                        println("java 线程--->" + Thread.currentThread().name)
                         try {
                             if (index % 2 == 0) {
                                 Thread.sleep(1000)
                             }
                             val position = (value.toByteArray().size * index)
                             asyncFile.write(Buffer.buffer(value), position.toLong()) {
-                                println("file 线程--->"+Thread.currentThread().name)
+                                println("file 线程--->" + Thread.currentThread().name)
                                 endCount += 1
                                 println("---写入结束--$endCount")
                             }
@@ -237,11 +246,11 @@ class AppTest {
                     asyncFile.close()
                 }
 
-                println("open 线程--->"+Thread.currentThread().name)
-             /* while(endCount != 10){
-                    这里会把verxt线程阻塞掉，导致所有的handle无法进行处理。，
-                }
-                asyncFile.close()*/
+                println("open 线程--->" + Thread.currentThread().name)
+                /* while(endCount != 10){
+                       这里会把verxt线程阻塞掉，导致所有的handle无法进行处理。，
+                   }
+                   asyncFile.close()*/
             } else {
                 it.cause().printStackTrace()
             }
@@ -251,16 +260,15 @@ class AppTest {
     }
 
 
-
     @Test
-    fun  testStringNull(){
-        val name :String? = "123"
+    fun testStringNull() {
+        val name: String? = "123"
         println((name ?: "asddfgds"))
     }
 
     @Test
     fun transformBucketName() {
-        val realBucketName:String = "kkkl-dev"
+        val realBucketName: String = "kkkl-dev"
 
 //        realBucketName.split("-".toRegex()).forEach{println(it)}
 
@@ -273,4 +281,126 @@ class AppTest {
 
         println(result)
     }
+
+    @Test
+    fun testLocalDateTime() {
+        val now = LocalDateTime.now()
+        println(now.second)
+        println(now.toEpochSecond(ZoneOffset.UTC))
+    }
+
+    @Test
+    fun testExecutor() {
+        val executor = Executors.newScheduledThreadPool(1)
+
+        executor.scheduleAtFixedRate({ println("---") }, 0L, 1L, TimeUnit.SECONDS)
+
+        Thread.sleep(10000)
+    }
+
+
+    @Test
+    fun getS3Test() {
+        val (bucketName, s3Service) = getS3Server()
+        val file = s3Service.getObject(bucketName, "DDDDD.zip")
+        if (file != null) {
+            println("文件存在")
+            println("metaData-->" + file.objectMetadata.contentLength)
+        } else {
+            println("文件不存在")
+        }
+    }
+
+    private fun getS3Server(): Pair<String, S3Service> {
+        val accessKey = PropertiesUtil.get("accessKey")
+        val secretKey = PropertiesUtil.get("secretKey")
+        val endpoint = PropertiesUtil.get("endpoint")
+        val bucketName = PropertiesUtil.get("bucketName")
+        val s3Service = S3Service(accessKey, secretKey, endpoint)
+        return Pair(bucketName, s3Service)
+    }
+
+    @Test
+    fun testAddObjectToS3() {
+        val (bucketName, service) = getS3Server()
+        val result = service.addObject(bucketName, "dir1/dir2/file.png", "D:\\zhupingjing\\testFile\\Unicode编码表.png")
+        if (result == null) {
+            println("上传失败")
+        }
+    }
+
+    // 测试文件分段上传
+    @Test
+    fun testMulitUploadFile() {
+        val (bucketName, service) = getS3Server()
+        val filePath = "D:\\zhupingjing\\testFile\\SecureCRT.zip"
+        service.mulitUpload(bucketName, "DDDDD.zip", filePath)
+    }
+
+    @Test
+    fun testMulitUploadFileWithJava() {
+        val (bucketName, service) = getS3Server()
+        val filePath = "D:\\zhupingjing\\testFile\\Studio 3T.zip"
+        service.testJavaUpload(bucketName, "aaaaaaaaaaaaa.zip", filePath)
+    }
+
+    @Test
+    fun testJavaListMultipartUploads() {
+        val (bucketName, service) = getS3Server()
+        service.testJavaListMultipartUploads(bucketName)
+    }
+
+    @Test
+    fun abortMultipartUpload() {
+        // 终止分段上传的任务
+        val (bucketName, service) = getS3Server()
+        service.abortMultipartUpload(bucketName, "DDDDD.zip", "ff63a5507bcbb3e6109ed394ef155501")
+    }
+
+    @Test
+    fun testNio() {
+        val byteBuffer = ByteBuffer.allocate(16)
+        println(byteBuffer.limit())
+        println(byteBuffer.position())
+        println(byteBuffer.mark())
+
+        byteBuffer.put(9)
+        byteBuffer.putInt(8)
+        byteBuffer.putInt(7)
+
+        println(byteBuffer.limit())
+        println(byteBuffer.position())
+        println(byteBuffer.mark())
+
+        byteBuffer.clear()
+        println(byteBuffer.limit())
+        println(byteBuffer.position())
+        println(byteBuffer.mark())
+
+    }
+
+    @Test
+    fun testNioReadFile() {
+        try {
+            val filePath = "D:\\zhupingjing\\testFile\\Studio 3T.zip"
+            val inputStream = FileInputStream(File(filePath))
+            val buffer = ByteBuffer.allocate(1024 * 1024 * 5)
+            val fileChannel = inputStream.channel
+            var allSize = 0;
+            while (fileChannel.read(buffer) != -1) {
+                buffer.flip()
+                val array = buffer.array()
+                allSize += buffer.limit()
+
+                buffer.clear()
+            }
+            fileChannel.close()
+            inputStream.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        Thread.sleep(2000)
+    }
+
+
 }

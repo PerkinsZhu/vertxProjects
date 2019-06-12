@@ -1,5 +1,7 @@
 package com.perkins.eventbus.handles
 
+import com.perkins.awss3.S3Service
+import com.perkins.common.PropertiesUtil
 import com.perkins.util.Base64Utils
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
@@ -9,19 +11,53 @@ import io.vertx.core.file.AsyncFile
 import io.vertx.core.file.OpenOptions
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.ext.mongo.BulkOperation
+import net.coobird.thumbnailator.Thumbnails
+import org.apache.commons.codec.digest.Md5Crypt
 import org.bson.types.ObjectId
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URLEncoder
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class Handle(vertx: Vertx) {
     val logger = LoggerFactory.getLogger(this.javaClass)
     val executor = vertx.createSharedWorkerExecutor("myWorker")
     val fs = vertx.fileSystem()
-    // TODO 上传完成之后清除缓存数据
-    //TODO 超时之后清除缓存
-    //TODO 实现并发存储
-    val fileIdMap = mutableMapOf<String, JsonObject>()
-    val fileIdToFile = mutableMapOf<String, AsyncFile>()
+    // 上传完成之后清除缓存数据
+    // 超时之后清除缓存
+    //TODO 实现并发存储  需要前端实现并发传输进行测试
+    private val fileIdMap = mutableMapOf<String, JsonObject>()
+    private val fileIdToFile = mutableMapOf<String, AsyncFile>()
+    val accessKey = PropertiesUtil.get("accessKey")
+    val secretKey = PropertiesUtil.get("secretKey")
+    val endpoint = PropertiesUtil.get("endpoint")
+    val bucketName = PropertiesUtil.get("bucketName")
+    val s3Service = S3Service(accessKey, secretKey, endpoint)
+
+    init {
+        val executor = Executors.newScheduledThreadPool(1)
+        // 缓存有效期设置为1分钟，定时器执行间隔1分钟，因此，实际上缓存存活时间在1-2分钟之间
+        val timeOut = 1000000000 * 60 * 1L
+        executor.scheduleAtFixedRate({
+            logger.info("clean cache data")
+            val expirationTime = System.nanoTime() - timeOut
+            val cleanKeys = fileIdMap.filter { entry ->
+                val value = entry.value
+                val createTime = value.getLong("createTime")
+                expirationTime > createTime
+            }.map { it.key }
+            cleanKeys.forEach { key ->
+                fileIdMap.remove(key)
+                fileIdToFile[key]?.let {
+                    it.close()
+                }
+                fileIdToFile.remove(key)
+            }
+            logger.info("当前缓存数量:fileIdToFile:${fileIdToFile.size},fileIdMap:${fileIdMap.size}")
+        }, 1L, 1L, TimeUnit.MINUTES)
+    }
 
     val fileData = Handler<Message<JsonObject>> { msg ->
         val body = msg.body()
@@ -55,6 +91,9 @@ class Handle(vertx: Vertx) {
         val fileName = body.getString("fileName")
         val blobCount = body.getInteger("blobCount")
         val contentSize = body.getLong("contentSize")
+        val contentType = body.getString("contentType", "application/octet-stream")
+
+
         val fileId = ObjectId.get().toString() + "-" + fileName //生成唯一文件名
 
         //缓存当前文件基本信息
@@ -62,6 +101,8 @@ class Handle(vertx: Vertx) {
         meatData.put("fileName", fileName)
         meatData.put("blobCount", blobCount)
         meatData.put("contentSize", contentSize)
+        meatData.put("createTime", System.nanoTime())
+        meatData.put("contentType", contentType)
         fileIdMap.put(fileId, meatData)
 
         //缓存当前文件的asyFile对象
@@ -153,6 +194,7 @@ class Handle(vertx: Vertx) {
             throw  RuntimeException("文件初始化异常")
         } else {
             val fileName = fileMetaData.getString("fileName")
+            val contentType = fileMetaData.getString("contentType")
             val blobCount = fileMetaData.getInteger("blobCount")
             val contentSize = fileMetaData.getLong("contentSize")
 
@@ -172,8 +214,10 @@ class Handle(vertx: Vertx) {
                         logger.error("第 $currentBlogNum 块数据写入 $position 失败")
                     }
                 }
-
                 it.flush()
+                //TODO 测试分块传输
+
+
                 logger.debug("=============第$currentBlogNum 块数据写入结束=============")
                 if (currentBlogNum == blobCount.toString()) {
                     logger.debug("最后一块数据写入完成，文件传输结束，关闭数据流")
@@ -181,6 +225,8 @@ class Handle(vertx: Vertx) {
                     //清空缓存
                     fileIdToFile.remove(fileId)
                     fileIdMap.remove(fileId)
+//                    val filePath = "D:\\myProjects\\vertxProjects\\vertx-web-kotlin\\src\\main\\kotlin\\com\\perkins\\eventbus\\uploads\\$fileId"
+//                    sendFileToS3(filePath, contentType, fileName)
                 }
             }
         }
@@ -204,6 +250,30 @@ class Handle(vertx: Vertx) {
                 }
             }
         }
+    }
+
+
+    // 从本地磁盘读取数据传输到S3
+    fun sendFileToS3(filePath: String, contentType: String, originaFileName: String) {
+        val uploadedFileName = filePath
+        val path = Base64Utils.encode(filePath.substringAfterLast("\\").toByteArray())
+        val pathWithObjectSuffix = "$path-${transformBucketName(bucketName) + "-test"}"
+        val userMetadata = mutableMapOf<String, String>()
+        userMetadata["contentType"] = contentType
+        userMetadata["OriginalName"] = URLEncoder.encode(originaFileName, "UTF-8")
+        val putObjectResult = s3Service.addObject(bucketName, pathWithObjectSuffix, uploadedFileName, userMetadata)
+        if (putObjectResult != null) {
+            logger.info("文件上传成功")
+        }
+        /*
+        val newFileName = ""
+        val thumbPath = "thumbnail-$path-$newFileName"
+        Thumbnails.of("").size(1111, 222).toFile(File("$thumbPath"))
+        */
+    }
+
+    fun transformBucketName(realBucketName: String): String {
+        return realBucketName.replace("-".toRegex(), "+")
     }
 }
 
