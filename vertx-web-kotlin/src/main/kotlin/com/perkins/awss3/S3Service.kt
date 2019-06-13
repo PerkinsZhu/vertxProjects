@@ -159,6 +159,10 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
                 .withBucketName(bucketName)
                 .withKey(key)
                 .withPartETags(eTagList) //注意，完成的时候必须要带eTagList
+        println("eTagList.size--->"+eTagList.size)
+        println("uploadId--->"+uploadId)
+        println("eTbucketName--->"+bucketName)
+        println("key--->"+key)
         return amazonS3.completeMultipartUpload(complete)
     }
 
@@ -194,7 +198,10 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
 
     private fun mulitUploadWithInputStream(filePath: String, bucketName: String, key: String, uploadId: String): List<PartETag> {
         val inputStream = FileInputStream(File(filePath))
-        val buffer = ByteBuffer.allocate(1024 * 1024 * 5)
+//        val buffer = ByteBuffer.allocate(1024 * 1024 * 5)
+        //https://docs.amazonaws.cn/AmazonS3/latest/dev/qfacts.html
+        // 分块上传，官方文档限制每段大小在5M以上，最后一段可以小于5M，实际测试在1M以上都是可以的，但是小于1M就会失败
+        val buffer = ByteBuffer.allocate(1024 * 1024)
         val fileChannel = inputStream.channel
         var partNum = 1;
         val list = mutableListOf<PartETag>()

@@ -302,6 +302,7 @@ class Handle(vertx: Vertx) {
 
         //初始化S3分块上传逻辑
         val tempResult = s3Service.initiateMultipartUpload(bucketName, fileId)
+        logger.info("tempResult-->"+tempResult)
         tempResult?.let {
             fileIdToUploadResultMap.put(fileId, it)
         }
@@ -347,6 +348,7 @@ class Handle(vertx: Vertx) {
                 val temp = mutableListOf<PartETag>()
                 val list = fileIdToPartETagMap.getOrDefault(fileId, temp)
                 partResult?.let { res ->
+                    logger.info("partETag--->" + res.partETag)
                     list.add(res.partETag)
                 }
                 fileIdToPartETagMap.put(fileId,list)
@@ -355,6 +357,12 @@ class Handle(vertx: Vertx) {
                 logger.debug("=============第$currentBlogNum 块数据写入结束=============")
                 if (currentBlogNum == blobCount.toString()) {
                     logger.debug("最后一块数据写入完成，文件传输结束，关闭数据流")
+
+//                    list.forEach{println("tag-->"+it)}
+                    println("list.size--->"+list.size)
+                    println("uploadId--->"+uploadId)
+                    println("eTbucketName--->"+bucketName)
+                    println("key--->"+fileId)
                     //结束S3上传逻辑
                     val complets = s3Service.completeMultipartUpload(bucketName,fileId,uploadId,list)
                     if(complets != null){

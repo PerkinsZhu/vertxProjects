@@ -333,7 +333,7 @@ class AppTest {
     @Test
     fun testMulitUploadFile() {
         val (bucketName, service) = getS3Server()
-        val filePath = "D:\\zhupingjing\\testFile\\SecureCRT.zip"
+        val filePath = "D:\\zhupingjing\\testFile\\sokit-1-3-win32-chs.zip"
         service.mulitUpload(bucketName, "DDDDD.zip", filePath)
     }
 
