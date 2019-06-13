@@ -1,0 +1,192 @@
+package com.perkins.eventbus.handles
+
+import com.amazonaws.services.s3.model.PartETag
+import com.amazonaws.services.s3.model.UploadPartResult
+import com.perkins.awss3.S3Service
+import com.perkins.common.PropertiesUtil
+import io.vertx.core.Handler
+import io.vertx.core.Vertx
+import io.vertx.core.eventbus.Message
+import io.vertx.core.file.AsyncFile
+import io.vertx.core.json.JsonObject
+import io.vertx.core.logging.LoggerFactory
+import org.apache.http.util.ByteArrayBuffer
+import org.bson.types.ObjectId
+import java.io.ByteArrayInputStream
+
+class HandleWithBuffer(vertx: Vertx) {
+    val logger = LoggerFactory.getLogger(this.javaClass)
+    val executor = vertx.createSharedWorkerExecutor("myWorker")
+    val fs = vertx.fileSystem()
+    // 上传完成之后清除缓存数据
+    // 超时之后清除缓存
+    //TODO 实现并发存储  需要前端实现并发传输进行测试
+    private val fileIdMap = mutableMapOf<String, JsonObject>()
+    private val fileIdToFile = mutableMapOf<String, AsyncFile>()
+    private val fileIdToUploadResultMap = mutableMapOf<String, Pair<String, ByteArrayBuffer>>()
+    private val fileIdToPartETagMap = mutableMapOf<String, MutableList<PartETag>>()
+
+    val accessKey = PropertiesUtil.get("accessKey")
+    val secretKey = PropertiesUtil.get("secretKey")
+    val endpoint = PropertiesUtil.get("endpoint")
+    val bucketName = PropertiesUtil.get("bucketName")
+    val s3Service = S3Service(accessKey, secretKey, endpoint)
+
+
+    // 开始进行分块上传，获取分块上传的文件ID
+
+    private fun getResult(data: JsonObject, code: Int, msg: String? = null): JsonObject {
+        val result = JsonObject()
+        result.put("code", code)
+        if (msg.isNullOrBlank()) {
+            val message = when (code) {
+                0 -> "处理成功"
+                else -> "处理失败"
+            }
+            result.put("msg", message)
+        } else {
+            result.put("msg", msg)
+        }
+        result.put("data", data)
+        return result
+    }
+
+
+    val startMulitUploadToS3 = Handler<Message<JsonObject>> { msg ->
+        val body = msg.body()
+        val fileName = body.getString("fileName")
+        val blobCount = body.getInteger("blobCount")
+        val contentSize = body.getLong("contentSize")
+        val contentType = body.getString("contentType", "application/octet-stream")
+
+
+        val fileId = ObjectId.get().toString() + "-" + fileName //生成唯一文件名
+
+        //缓存当前文件基本信息
+        val meatData = JsonObject()
+        meatData.put("fileName", fileName)
+        meatData.put("blobCount", blobCount)
+        meatData.put("contentSize", contentSize)
+        meatData.put("createTime", System.nanoTime())
+        meatData.put("contentType", contentType)
+        fileIdMap.put(fileId, meatData)
+        fileIdToPartETagMap.put(fileId, mutableListOf())
+
+        //初始化S3分块上传逻辑
+        val tempResult = s3Service.initiateMultipartUpload(bucketName, fileId)
+        tempResult?.let {
+            logger.info("开始上传文件:$fileId,fileName:$fileName")
+            val byteBuffer = ByteArrayBuffer(1024 * 1024 * 5)
+            fileIdToUploadResultMap.put(fileId, Pair(it.uploadId, byteBuffer))
+        }
+
+        //回复客户端 文件Id(新文件名)
+        val data = JsonObject()
+        data.put("fileId", fileId)
+        val result = getResult(data, 0)
+        msg.reply(result)
+    }
+
+
+    // 按照二进制字符串上传分块数据
+    val mulitUploadWithByteStringAndSendToS3 = Handler<Message<String>> { msg ->
+        val dataBody = msg.body()
+
+        val header = msg.headers()
+        val fileId = header["fileId"]
+
+        val currentBlogNum = header["currentBlogNum"]
+
+        val fileMetaData = fileIdMap.get(fileId)
+        val initResult = fileIdToUploadResultMap[fileId]
+
+        if (fileMetaData == null || initResult == null) {
+            logger.error("未找到文件的metadata数据或AsyncFile对象")
+            throw  RuntimeException("文件初始化异常")
+        } else {
+            val fileName = fileMetaData.getString("fileName")
+            val contentType = fileMetaData.getString("contentType")
+            val blobCount = fileMetaData.getInteger("blobCount")
+            val contentSize = fileMetaData.getLong("contentSize")
+
+            logger.debug("fileName:$fileName,blobCount:$blobCount,currentBlogCount:$currentBlogNum")
+            val byteArray = dataBody.toByteArray(Charsets.ISO_8859_1)
+            initResult?.let {
+                logger.debug("=============共 $blobCount 块数据，开始写入第$currentBlogNum 块数据=============")
+                val uploadId = it.first
+                val byteBuffer = it.second
+
+                val bufferSize = byteBuffer.length()
+                val dataSize = byteArray.size
+                var remain = 0;
+                val cpat = byteBuffer.capacity()
+                if (bufferSize + dataSize > cpat) {  // 判断缓存是否装满，如果装满了就发送，没装满不发送。S3分段上传的时候貌似只支持1024的整数倍
+                    remain = cpat - bufferSize //本次接收到但是未发送的数据
+                    byteBuffer.append(byteArray, 0, remain)
+                    println("$bufferSize-- $dataSize--$remain")
+                } else {
+                    byteBuffer.append(byteArray, 0, byteArray.size)
+                }
+
+                val list = fileIdToPartETagMap[fileId] ?: mutableListOf()
+                var isSend = false
+                val sendedCount = list.size
+                if (remain > 0) { // 本次可以发送且没有发送完
+                    val partResult = sendToS3(byteBuffer, fileId, uploadId, sendedCount + 1)
+                    partResult?.let { res ->
+                        list.add(res.partETag)
+                    }
+
+                    byteBuffer.clear()
+                    byteBuffer.append(byteArray, remain, (byteArray.size - remain)) // 把未发送的数据存储下来
+                    isSend = true
+                }
+
+
+
+                logger.debug("=============第$currentBlogNum 块数据写入结束=============")
+                if (currentBlogNum == blobCount.toString()) {
+                    if (!isSend) {
+                        val partResult = sendToS3(byteBuffer, fileId, uploadId, sendedCount + 1)
+                        partResult?.let { res ->
+                            list.add(res.partETag)
+                        }
+                        fileIdToPartETagMap.put(fileId, list)
+                        byteBuffer.clear()
+                    }
+
+                    logger.debug("最后一块数据写入完成，文件传输结束，关闭数据流")
+
+                    //结束S3上传逻辑
+                    val complets = s3Service.completeMultipartUpload(bucketName, fileId, uploadId, list)
+                    if (complets != null) {
+                        logger.info("文件上传结束!")
+                    } else {
+                        logger.error("文件上传S3 结束失败")
+                    }
+                    fileIdToPartETagMap.remove(fileId)
+                    fileIdToUploadResultMap.remove(fileId)
+                    //清空缓存
+                    fileIdToFile.remove(fileId)
+                    fileIdMap.remove(fileId)
+                    byteBuffer.clear()
+                }
+            }
+        }
+
+        val data = JsonObject()
+        val result = getResult(data, 0, "第$currentBlogNum 块文件上传成功")
+        msg.reply(result)
+    }
+
+    private fun sendToS3(byteBuffer: ByteArrayBuffer, fileId: String, uploadId: String, sendCount: Int): UploadPartResult? {
+        val sendByteArray = byteBuffer.toByteArray() ?: ByteArray(0)
+        logger.info("sendToS3------>$sendCount--->${sendByteArray.size}")
+        return s3Service.uploadPart(bucketName, fileId,
+                uploadId,
+                sendCount,
+                ByteArrayInputStream(sendByteArray),
+                sendByteArray.size.toLong())
+    }
+
+}

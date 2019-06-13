@@ -415,5 +415,49 @@ class AppTest {
         Thread.sleep(2000)
     }
 
+    @Test
+    fun testCompLength(){
+        val temp = "ABC".toByteArray()
+        println(temp.size)
+        val data = Base64Utils.encode(temp)
+        println(data)
 
+        val bsArray= data.toByteArray()
+        println(bsArray.size)
+
+        println("你".toByteArray())
+        println("你".toByteArray().size)
+
+        println("A".toByteArray())
+        println("A".toByteArray().size)
+
+        println('A'.toByte())
+
+        println(5.toByte())
+        println(15.toByte().toString())
+
+
+     /*   temp.forEach {
+            println(it.toString())
+        }*/
+        println(Integer.toBinaryString(5))
+
+        val list = mutableListOf<String>()
+    }
+
+    @Test
+    fun testMapReference(){
+        val map = mutableMapOf<String,List<String>>()
+        val list = mutableListOf<String>()
+        println(list?.hashCode())
+        map.getOrDefault("a",list)
+        list.add("a")
+        list.add("b")
+        list.add("c")
+        map.put("a",list)
+        val temp = map.get("a")
+        println(temp?.hashCode())
+        temp?.forEach { println(it) }
+
+    }
 }

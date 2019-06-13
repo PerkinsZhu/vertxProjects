@@ -156,6 +156,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
 
 
     fun completeMultipartUpload(bucketName: String, key: String, uploadId: String, eTagList: List<PartETag>): CompleteMultipartUploadResult? {
+        logger.info("completeMultipartUpload------${bucketName}--$key--$uploadId--${eTagList.size}")
         val complete = CompleteMultipartUploadRequest()
                 .withUploadId(uploadId)
                 .withBucketName(bucketName)
@@ -199,7 +200,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
 //        val buffer = ByteBuffer.allocate(1024 * 1024 * 5)
         //https://docs.amazonaws.cn/AmazonS3/latest/dev/qfacts.html
         // 分块上传，官方文档限制每段大小在5M以上，最后一段可以小于5M，实际测试在1M以上都是可以的，但是小于1M就会失败
-        val buffer = ByteBuffer.allocate(1024 * 1024)
+        val buffer = ByteBuffer.allocate(1024 * 1024 * 2 )
         val fileChannel = inputStream.channel
         var partNum = 1;
         val list = mutableListOf<PartETag>()

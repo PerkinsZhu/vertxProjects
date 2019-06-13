@@ -25,6 +25,7 @@ public class UploadObjectMPULowLevelAPI {
         File file = new File(filePath);
         long contentLength = file.length();
         long partSize = 5242880; // Set part size to 5 MB.
+//        long partSize = 1024 *1024* 2 + 100; // Set part size to 5 MB.
 
         try {
             // Step 2: Upload parts.
@@ -54,6 +55,7 @@ public class UploadObjectMPULowLevelAPI {
                     new CompleteMultipartUploadRequest(existingBucketName, keyName, initResponse.getUploadId(), partETags);
             s3Client.completeMultipartUpload(compRequest);
         } catch (Exception e) {
+            e.printStackTrace();
             s3Client.abortMultipartUpload(new AbortMultipartUploadRequest(existingBucketName, keyName, initResponse.getUploadId()));
         }
     }

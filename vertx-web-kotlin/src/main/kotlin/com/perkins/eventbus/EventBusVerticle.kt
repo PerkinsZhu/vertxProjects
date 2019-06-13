@@ -2,6 +2,7 @@ package com.perkins.eventbus
 
 import com.perkins.Runner
 import com.perkins.eventbus.handles.Handle
+import com.perkins.eventbus.handles.HandleWithBuffer
 import com.perkins.handlers.BaseHandle
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
@@ -38,6 +39,7 @@ fun main(args: Array<String>) {
 class EventBusVerticle : AbstractVerticle() {
     override fun start() {
         val handler = Handle(vertx)
+        val handlerWithBuffer = HandleWithBuffer(vertx)
         val router = Router.router(vertx)
         val opts = BridgeOptions()
                 .addOutboundPermitted(io.vertx.ext.bridge.PermittedOptions().setAddressRegex(".*"))
@@ -69,8 +71,8 @@ class EventBusVerticle : AbstractVerticle() {
 
         val options = HttpServerOptions()
         // 设置每次http请求长度最大值，该设置会影响整个服务
-        options.maxWebsocketFrameSize = 1024 * 1024 * 5
-        options.maxWebsocketMessageSize = 1024 *1024 * 10
+//        options.maxWebsocketFrameSize = 1024 * 1024 * 5
+//        options.maxWebsocketMessageSize = 1024 *1024 * 10
 
         vertx.createHttpServer(options).requestHandler { router.accept(it) }.listen(8081)
 
@@ -86,6 +88,9 @@ class EventBusVerticle : AbstractVerticle() {
         eb.consumer<JsonObject>("startMulitUploadToS3", handler.startMulitUploadToS3)
         eb.consumer<String>("mulitUploadWithBase64AndSendToS3", handler.mulitUploadWithBase64AndSendToS3)
         eb.consumer<String>("mulitUploadWithByteStringAndSendToS3", handler.mulitUploadWithByteStringAndSendToS3)
+        // 通过缓存存储文件数据
+        eb.consumer<JsonObject>("startSendWithBuffer", handlerWithBuffer.startMulitUploadToS3)
+        eb.consumer<String>("uploadSendWithBuffer", handlerWithBuffer.mulitUploadWithByteStringAndSendToS3)
 
     }
 
