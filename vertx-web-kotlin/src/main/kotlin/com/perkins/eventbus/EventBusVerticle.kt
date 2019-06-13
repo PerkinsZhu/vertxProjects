@@ -11,6 +11,8 @@ import io.vertx.core.eventbus.MessageConsumer
 import io.vertx.core.eventbus.impl.codecs.BufferMessageCodec
 import io.vertx.core.eventbus.impl.codecs.ByteArrayMessageCodec
 import io.vertx.core.file.OpenOptions
+import io.vertx.core.http.HttpClientOptions
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.impl.WebSocketImplBase
 import io.vertx.core.json.JsonObject
@@ -41,6 +43,7 @@ class EventBusVerticle : AbstractVerticle() {
                 .addOutboundPermitted(io.vertx.ext.bridge.PermittedOptions().setAddressRegex(".*"))
                 .addInboundPermitted(io.vertx.ext.bridge.PermittedOptions().setAddressRegex(".*"))
 
+
         val uploadFile = Handler<RoutingContext> {
             val request = it.request()
             request.params().map { BaseHandle.logger.info(it) }
@@ -64,7 +67,12 @@ class EventBusVerticle : AbstractVerticle() {
 
         router.route().handler(StaticHandler.create())
 
-        vertx.createHttpServer().requestHandler { router.accept(it) }.listen(8081)
+        val options = HttpServerOptions()
+        // 设置每次http请求长度最大值，该设置会影响整个服务
+        options.maxWebsocketFrameSize = 1024 * 1024 * 5
+        options.maxWebsocketMessageSize = 1024 *1024 * 10
+
+        vertx.createHttpServer(options).requestHandler { router.accept(it) }.listen(8081)
 
         val eb = vertx.eventBus()
         val fs = vertx.fileSystem()
@@ -77,6 +85,7 @@ class EventBusVerticle : AbstractVerticle() {
         eb.consumer<String>("mulitUploadWithBase64", handler.mulitUploadWithBase64)
         eb.consumer<JsonObject>("startMulitUploadToS3", handler.startMulitUploadToS3)
         eb.consumer<String>("mulitUploadWithBase64AndSendToS3", handler.mulitUploadWithBase64AndSendToS3)
+        eb.consumer<String>("mulitUploadWithByteStringAndSendToS3", handler.mulitUploadWithByteStringAndSendToS3)
 
     }
 

@@ -40,6 +40,7 @@ public class APP {
             options.addHeader("some-header", "some-value");
             options.setSendTimeout(2000);
 
+
             eb.publish("news.uk.sport", "----publish message---", options);
             eb.send("news.uk.sport", "---send message----", options, ar -> {
                 if (ar.succeeded()) {

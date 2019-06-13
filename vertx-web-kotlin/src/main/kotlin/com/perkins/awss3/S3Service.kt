@@ -130,6 +130,8 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
     }
 
     fun uploadPart(bucketName: String, key: String, uploadId: String, partNum: Int, inputStream: InputStream, partSize: Long): UploadPartResult? {
+        logger.info("第$partNum,大小:$partSize")
+
         val uploadPartRequest = UploadPartRequest()
                 .withUploadId(uploadId)
                 .withPartNumber(partNum)
@@ -159,10 +161,6 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
                 .withBucketName(bucketName)
                 .withKey(key)
                 .withPartETags(eTagList) //注意，完成的时候必须要带eTagList
-        println("eTagList.size--->"+eTagList.size)
-        println("uploadId--->"+uploadId)
-        println("eTbucketName--->"+bucketName)
-        println("key--->"+key)
         return amazonS3.completeMultipartUpload(complete)
     }
 
