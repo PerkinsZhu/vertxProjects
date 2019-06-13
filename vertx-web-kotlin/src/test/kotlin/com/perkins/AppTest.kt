@@ -358,6 +358,19 @@ class AppTest {
     }
 
     @Test
+    fun stopAllTask(){
+        val (bucketName, service) = getS3Server()
+        val list = service.testJavaListMultipartUploads(bucketName)
+        list.forEach { upload ->
+            try {
+                service.abortMultipartUpload(bucketName, upload.key, upload.uploadId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    @Test
     fun testNio() {
         val byteBuffer = ByteBuffer.allocate(16)
         println(byteBuffer.limit())

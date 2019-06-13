@@ -59,7 +59,7 @@ public class UploadObjectMPULowLevelAPI {
     }
 
     // 列出正在分段上传的任务，这些任任务可能是分段上传失败忘记终止的任务
-    public static void listMultipartUploads(AmazonS3 s3Client,String bucketName){
+    public static List<MultipartUpload> listMultipartUploads(AmazonS3 s3Client,String bucketName){
         try {
             // Retrieve a list of all in-progress multipart uploads.
             ListMultipartUploadsRequest allMultipartUploadsRequest = new ListMultipartUploadsRequest(bucketName);
@@ -71,6 +71,7 @@ public class UploadObjectMPULowLevelAPI {
             for (MultipartUpload u : uploads) {
                 System.out.println("Upload in progress: Key = \"" + u.getKey() + "\", id = " + u.getUploadId());
             }
+            return uploads;
         }
         catch(AmazonServiceException e) {
             // The call was transmitted successfully, but Amazon S3 couldn't process
@@ -82,5 +83,6 @@ public class UploadObjectMPULowLevelAPI {
             // couldn't parse the response from Amazon S3.
             e.printStackTrace();
         }
+        return new ArrayList<>(0);
     }
 }

@@ -145,7 +145,6 @@ class Handle(vertx: Vertx) {
     }
 
     val mulitUpload = Handler<Message<JsonObject>> { msg ->
-        //TODO 实现文件的分快上传
         /**
          * 思路：
          *      前端先调用接口获取分块文件ID，后端把Id和文件名做缓存

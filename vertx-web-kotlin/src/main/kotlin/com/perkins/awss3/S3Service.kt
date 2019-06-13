@@ -271,8 +271,8 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
     }
 
     // 调用java客户端测试
-    fun testJavaListMultipartUploads(bucketName: String) {
-        UploadObjectMPULowLevelAPI.listMultipartUploads(amazonS3,bucketName)
+    fun testJavaListMultipartUploads(bucketName: String) :List<MultipartUpload>{
+        return UploadObjectMPULowLevelAPI.listMultipartUploads(amazonS3, bucketName)
     }
 
 }
