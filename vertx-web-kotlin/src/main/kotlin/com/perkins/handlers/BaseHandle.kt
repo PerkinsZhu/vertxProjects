@@ -36,13 +36,13 @@ object BaseHandle : AbstractHandle() {
         println(bucketName)
         println("params-->" + request.params())
         println("formAttributes--->" + request.formAttributes())
-        if(key == "123"){
+        if (key == "123") {
             it.reroute("/path1/$key/$bucketName")
-        }else{
+        } else {
             it.reroute("/path2/$key")
         }
     }
-    val path1= Handler<RoutingContext> {
+    val path1 = Handler<RoutingContext> {
         println("-----path--1----")
         val request = it.request()
         val key = request.getParam("key")
@@ -51,21 +51,39 @@ object BaseHandle : AbstractHandle() {
         println(bucketName)
         println("params-->" + request.params())
         println("formAttributes--->" + request.formAttributes())
-        if(key == "123"){
+        if (key == "123") {
 
         }
         it.response().end("path1")
     }
-    val path2= Handler<RoutingContext> {
+    val path2 = Handler<RoutingContext> {
         println("-----path--2----")
         val request = it.request()
         val key = request.getParam("key")
         println(key)
         println("params-->" + request.params())
         println("formAttributes--->" + request.formAttributes())
-        if(key == "123"){
+        if (key == "123") {
 
         }
         it.response().end("path2")
     }
+
+    val sessionTest = Handler<RoutingContext> {
+        val session = it.session()
+        session.put("name", "jack")
+    }
+
+    val setSession = Handler<RoutingContext> {
+        val session = it.session()
+        session.put("userName", "jack")
+        session.put("userAge", 10)
+        it.response().end("set success")
+    }
+    val getSession = Handler<RoutingContext> {
+        val session = it.session()
+        println(session)
+        it.response().end(JsonObject(session.data()).toString())
+    }
+
 }

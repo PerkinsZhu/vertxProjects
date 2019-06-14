@@ -5,6 +5,9 @@ import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
+import io.vertx.ext.web.handler.CookieHandler
+import io.vertx.ext.web.handler.SessionHandler
+import io.vertx.ext.web.sstore.LocalSessionStore
 
 class CommonVerticle : AbstractVerticle() {
     override fun start(startFuture: Future<Void>) {
@@ -24,6 +27,8 @@ class CommonVerticle : AbstractVerticle() {
 
 
     private fun createRouter() = Router.router(vertx).apply {
+        val sessionStore = LocalSessionStore.create(vertx, "sessionName")
+
         //        route().handler(BodyHandler.create())
         get("/").handler(BaseHandle.indexHandle)
         post("/json").handler(BaseHandle.jsonHandle)
@@ -31,6 +36,11 @@ class CommonVerticle : AbstractVerticle() {
         get("/redirect/:key").handler(BaseHandle.redirectHandle)
         get("/path1/:key/bucketName").handler(BaseHandle.path1)
         get("/path2/:key").handler(BaseHandle.path2)
+        // 对于该路径添加session管理
+        get("/session/*").handler(CookieHandler.create())
+        get("/session/*").handler(SessionHandler.create(sessionStore))
+        get("/session/set").handler(BaseHandle.setSession)
+        get("/session/get").handler(BaseHandle.getSession)
     }
 
 }
