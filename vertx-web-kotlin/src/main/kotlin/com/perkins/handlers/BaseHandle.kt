@@ -3,11 +3,21 @@ package com.perkins.handlers
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
+import io.vertx.ext.auth.jwt.JWTAuth
+import io.vertx.ext.auth.jwt.JWTOptions
 import io.vertx.ext.web.RoutingContext
 
 object BaseHandle : AbstractHandle() {
     val indexHandle = Handler<RoutingContext> {
         it.response().end("welcome")
+    }
+    val failure = Handler<RoutingContext> {
+        if (it.failed()) {
+            it.failure()?.printStackTrace()
+            it.response().end("error --> ${it.statusCode()}")
+        } else {
+            it.response().end("welcome")
+        }
     }
     val jsonHandle = Handler<RoutingContext> {
         val result = JsonObject().put("code", 0).put("msg", "请求成功").put("data", JsonArray())
@@ -84,6 +94,19 @@ object BaseHandle : AbstractHandle() {
         val session = it.session()
         println(session)
         it.response().end(JsonObject(session.data()).toString())
+    }
+
+    fun login(authProvider: JWTAuth) = Handler<RoutingContext> {
+        val Permissions = listOf("admin:all", "manager;lever2")
+        val info = JsonObject().put("userId", "123456").put("userName", "jack")
+        it.response().end(authProvider.generateToken(info))
+
+    }
+
+    val getUser = Handler<RoutingContext> {
+        val user = JsonObject()
+        user.put("name", "jack")
+        it.response().end(user.toString())
     }
 
 }

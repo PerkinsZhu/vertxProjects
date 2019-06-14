@@ -7,12 +7,13 @@ import com.perkins.common.PropertiesUtil
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.eventbus.Message
-import io.vertx.core.file.AsyncFile
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.LoggerFactory
 import org.apache.http.util.ByteArrayBuffer
 import org.bson.types.ObjectId
 import java.io.ByteArrayInputStream
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class HandleWithBuffer(vertx: Vertx) {
     val logger = LoggerFactory.getLogger(this.javaClass)
@@ -22,7 +23,6 @@ class HandleWithBuffer(vertx: Vertx) {
     // 超时之后清除缓存
     //TODO 实现并发存储  需要前端实现并发传输进行测试
     private val fileIdMap = mutableMapOf<String, JsonObject>()
-    private val fileIdToFile = mutableMapOf<String, AsyncFile>()
     private val fileIdToUploadResultMap = mutableMapOf<String, Pair<String, ByteArrayBuffer>>()
     private val fileIdToPartETagMap = mutableMapOf<String, MutableList<PartETag>>()
 
@@ -33,7 +33,26 @@ class HandleWithBuffer(vertx: Vertx) {
     val s3Service = S3Service(accessKey, secretKey, endpoint)
 
 
-    // 开始进行分块上传，获取分块上传的文件ID
+    init {
+        val executor = Executors.newScheduledThreadPool(1)
+        // 缓存有效期设置为1分钟，定时器执行间隔1分钟，因此，实际上缓存存活时间在1-2分钟之间
+        val timeOut = 1000000000 * 60 * 1L
+        executor.scheduleAtFixedRate({
+            logger.info("clean cache data")
+            val expirationTime = System.nanoTime() - timeOut
+            val cleanKeys = fileIdMap.filter { entry ->
+                val value = entry.value
+                val createTime = value.getLong("createTime")
+                expirationTime > createTime
+            }.map { it.key }
+            cleanKeys.forEach { key ->
+                fileIdMap.remove(key)
+                fileIdToUploadResultMap.remove(key)
+                fileIdToPartETagMap.remove(key)
+            }
+            logger.info("当前缓存数量:fileIdMap:${fileIdMap.size},fileIdToUploadResultMap:${fileIdToUploadResultMap.size},fileIdToPartETagMap:${fileIdToPartETagMap.size}")
+        }, 1L, 1L, TimeUnit.MINUTES)
+    }
 
     private fun getResult(data: JsonObject, code: Int, msg: String? = null): JsonObject {
         val result = JsonObject()
@@ -125,6 +144,9 @@ class HandleWithBuffer(vertx: Vertx) {
                     byteBuffer.append(byteArray, 0, remain)
                     println("$bufferSize-- $dataSize--$remain")
                 } else {
+                    // 由于后端做buffer缓存前段数据，如果前段并发不按照顺序发送数据，则后端就需要缓存所有的数据，
+                    // 等待前段全部发送成功之后再
+                    //提交S3,这样就等同于前端先上传文件到后端，后端再统一发送，这样就不是实时发送数据到S3。
                     byteBuffer.append(byteArray, 0, byteArray.size)
                 }
 
@@ -164,12 +186,10 @@ class HandleWithBuffer(vertx: Vertx) {
                     } else {
                         logger.error("文件上传S3 结束失败")
                     }
+                    byteBuffer.clear()
                     fileIdToPartETagMap.remove(fileId)
                     fileIdToUploadResultMap.remove(fileId)
-                    //清空缓存
-                    fileIdToFile.remove(fileId)
                     fileIdMap.remove(fileId)
-                    byteBuffer.clear()
                 }
             }
         }

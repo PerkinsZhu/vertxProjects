@@ -52,6 +52,10 @@ dependencies {
 //    compile "io.reactivex.rxjava2:rxjava:2.2.9"
     compile "io.vertx:vertx-rx-java:$vertx_version"
     compile "io.vertx:vertx-reactive-streams:$vertx_version"
+    compile "io.vertx:vertx-auth-common:$vertx_version"
+    compile "io.vertx:vertx-auth-jwt:$vertx_version"
+    compile "io.vertx:vertx-hazelcast:$vertx_version"
+    compile "com.hazelcast:hazelcast:3.8.2"
 
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
@@ -67,7 +71,6 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
     compile group: 'commons-codec', name: 'commons-codec', version: '1.12'
-
 
 
 }
@@ -99,6 +102,6 @@ run {
 }
 
 /**
-  停止服务: vertx stop  34133243-5dfa-4ace-9221-02decee7a3ca-redeploy（run时候自动生成的ID）
- 
+ 停止服务: vertx stop  34133243-5dfa-4ace-9221-02decee7a3ca-redeploy（run时候自动生成的ID）
+
  */
