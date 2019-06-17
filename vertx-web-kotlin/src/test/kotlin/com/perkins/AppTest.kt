@@ -9,15 +9,16 @@ import sun.security.provider.certpath.Vertex
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.buffer.impl.BufferImpl
-import java.io.File
-import java.io.FileInputStream
 import java.nio.ByteBuffer
 import jdk.nashorn.internal.objects.NativeArray.forEach
 import io.vertx.core.file.AsyncFile
 import io.vertx.core.file.OpenOptions
 import io.vertx.rx.java.RxHelper
-import java.io.ByteArrayInputStream
-import java.io.FileOutputStream
+import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.codec.digest.Md5Crypt
+import software.amazon.awssdk.utils.Md5Utils
+import sun.security.provider.MD5
+import java.io.*
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.concurrent.Executors
@@ -358,7 +359,7 @@ class AppTest {
     }
 
     @Test
-    fun stopAllTask(){
+    fun stopAllTask() {
         val (bucketName, service) = getS3Server()
         val list = service.testJavaListMultipartUploads(bucketName)
         list.forEach { upload ->
@@ -416,13 +417,13 @@ class AppTest {
     }
 
     @Test
-    fun testCompLength(){
+    fun testCompLength() {
         val temp = "ABC".toByteArray()
         println(temp.size)
         val data = Base64Utils.encode(temp)
         println(data)
 
-        val bsArray= data.toByteArray()
+        val bsArray = data.toByteArray()
         println(bsArray.size)
 
         println("你".toByteArray())
@@ -437,27 +438,64 @@ class AppTest {
         println(15.toByte().toString())
 
 
-     /*   temp.forEach {
-            println(it.toString())
-        }*/
+        /*   temp.forEach {
+               println(it.toString())
+           }*/
         println(Integer.toBinaryString(5))
 
         val list = mutableListOf<String>()
     }
 
     @Test
-    fun testMapReference(){
-        val map = mutableMapOf<String,List<String>>()
+    fun testMapReference() {
+        val map = mutableMapOf<String, List<String>>()
         val list = mutableListOf<String>()
         println(list?.hashCode())
-        map.getOrDefault("a",list)
+        map.getOrDefault("a", list)
         list.add("a")
         list.add("b")
         list.add("c")
-        map.put("a",list)
+        map.put("a", list)
         val temp = map.get("a")
         println(temp?.hashCode())
         temp?.forEach { println(it) }
 
+    }
+
+    @Test
+    fun testCopyFile() {
+        val input = FileInputStream(File("D:\\zhupingjing\\testFile\\Unicode编码表.png"))
+        saveFileWithBlocking(input, "D:\\zhupingjing\\testFile\\Unicode编码表new.png")
+    }
+
+    fun saveFileWithBlocking(inputStream: InputStream, targetFilePath: String) {
+        val targetFile = createNewFile(targetFilePath)
+        val bufSize = 1024 * 1024 * 5
+        val buffer = ByteArray(bufSize);
+        try {
+            var c = -1
+            while ({ c = inputStream.read(buffer);c }() > -1) {
+                targetFile.appendBytes(buffer.copyOfRange(0, c))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            println("文件写入结束")
+            inputStream.close()
+        }
+    }
+
+    private fun createNewFile(sourceFilePath: String): File {
+        val sourceFile = File(sourceFilePath)
+        if (sourceFile.exists()) {
+            sourceFile.delete()
+        }
+        sourceFile.createNewFile()
+        return sourceFile
+    }
+
+    @Test
+    fun testMD5(){
+        println(DigestUtils.md5Hex("werwesadfsdf"))
     }
 }

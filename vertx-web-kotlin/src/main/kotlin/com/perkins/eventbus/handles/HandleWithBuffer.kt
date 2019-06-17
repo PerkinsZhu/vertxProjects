@@ -12,6 +12,7 @@ import io.vertx.core.logging.LoggerFactory
 import org.apache.http.util.ByteArrayBuffer
 import org.bson.types.ObjectId
 import java.io.ByteArrayInputStream
+import java.net.URLEncoder
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -79,7 +80,8 @@ class HandleWithBuffer(vertx: Vertx) {
         val contentType = body.getString("contentType", "application/octet-stream")
 
 
-        val fileId = ObjectId.get().toString() + "-" + fileName //生成唯一文件名
+        //生成唯一文件名 格式为  随机串-${bucketName}-s3
+        val fileId = ObjectId.get().toString() +"-"+ fileName.substringBeforeLast(".") + "-im+test-s3." + fileName.substringAfterLast(".")
 
         //缓存当前文件基本信息
         val meatData = JsonObject()
@@ -91,17 +93,28 @@ class HandleWithBuffer(vertx: Vertx) {
         fileIdMap.put(fileId, meatData)
         fileIdToPartETagMap.put(fileId, mutableListOf())
 
+
+        val userMetadata = mutableMapOf<String,String>()
+        userMetadata["contentType"] = contentType
+        userMetadata["OriginalName"] = URLEncoder.encode(fileName,"UTF-8")
         //初始化S3分块上传逻辑
-        val tempResult = s3Service.initiateMultipartUpload(bucketName, fileId)
+        val tempResult = s3Service.initiateMultipartUpload(bucketName, fileId,userMetadata)
         tempResult?.let {
             logger.info("开始上传文件:$fileId,fileName:$fileName")
             val byteBuffer = ByteArrayBuffer(1024 * 1024 * 5)
             fileIdToUploadResultMap.put(fileId, Pair(it.uploadId, byteBuffer))
         }
 
+        //TODO 如何记录该图片是由哪个用户发送给哪个客服的？
+//        数据库存储的时候，如果是图片则需要同时存储源文件名称和缩略图文件名称，此时缩略图是不存在的，只有在首次下载的时候才
+//        生成缩略图
+
         //回复客户端 文件Id(新文件名)
         val data = JsonObject()
         data.put("fileId", fileId)
+        data.put("thumb", "thumbnail-$fileId")
+        data.put("_id", "数据库_id")
+
         val result = getResult(data, 0)
         msg.reply(result)
     }

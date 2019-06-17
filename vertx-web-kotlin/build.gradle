@@ -72,6 +72,8 @@ dependencies {
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
     compile group: 'commons-codec', name: 'commons-codec', version: '1.12'
 
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
+    compile group: 'log4j', name: 'log4j', version: '1.2.17'
 
 }
 

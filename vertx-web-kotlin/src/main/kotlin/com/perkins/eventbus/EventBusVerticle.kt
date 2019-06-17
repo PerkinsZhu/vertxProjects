@@ -61,7 +61,7 @@ class EventBusVerticle : AbstractVerticle() {
         router.route().handler(StaticHandler.create())
 
         val baseHandler = BaseHandle(vertx)
-        router.route("/getFile").handler(baseHandler.getFile)
+        router.get("/getFile").handler(baseHandler.getFile)
 
 
         val options = HttpServerOptions()

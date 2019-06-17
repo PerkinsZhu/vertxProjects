@@ -123,9 +123,15 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
         }
     }
 
-    fun initiateMultipartUpload(bucketName: String, key: String): InitiateMultipartUploadResult? {
+    fun initiateMultipartUpload(bucketName: String, key: String, userMetadata: Map<String, String>? = null): InitiateMultipartUploadResult? {
         // 这里支持metadata
         val request = InitiateMultipartUploadRequest(bucketName, key)
+        userMetadata?.let {
+            val metadata = ObjectMetadata()
+            metadata.userMetadata = it
+            request.withObjectMetadata(metadata)
+        }
+
         return amazonS3.initiateMultipartUpload(request)
     }
 
