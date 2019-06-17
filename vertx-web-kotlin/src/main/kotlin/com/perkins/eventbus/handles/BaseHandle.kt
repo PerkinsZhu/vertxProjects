@@ -96,7 +96,7 @@ class BaseHandle(vertx: Vertx) {
 
                     } else {
                         logger.error("----源文件丢失！！")
-                        //TODO 按照接口规范返回接送对象
+                        //TODO 按照接口规范返回json对象
                         response.end("can not found file in the S3")
                     }
                 } else {
@@ -114,7 +114,11 @@ class BaseHandle(vertx: Vertx) {
         }
         val uploadThumbWidth = 108
         val uploadThumbHeight = 108
-        Thumbnails.of(source).size(uploadThumbWidth, uploadThumbHeight).toFile(File(tempTargetFilePath))
+        try {
+            Thumbnails.of(source).size(uploadThumbWidth, uploadThumbHeight).toFile(File(tempTargetFilePath))
+        } catch (e: Exception) {
+            logger.error("生成缩略图失败", e)
+        }
         println("生成缩略图完成")
     }
 

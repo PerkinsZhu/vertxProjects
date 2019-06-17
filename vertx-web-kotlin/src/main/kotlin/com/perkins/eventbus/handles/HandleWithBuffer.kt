@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.model.PartETag
 import com.amazonaws.services.s3.model.UploadPartResult
 import com.perkins.awss3.S3Service
 import com.perkins.common.PropertiesUtil
+import com.perkins.handlers.AbstractHandle
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.eventbus.Message
@@ -17,16 +18,17 @@ import java.io.ByteArrayInputStream
 import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class HandleWithBuffer(vertx: Vertx) {
-    val logger = LoggerFactory.getLogger(this.javaClass)
+class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
+
     val executor = vertx.createSharedWorkerExecutor("myWorker")
     val fs = vertx.fileSystem()
     // 上传完成之后清除缓存数据
     // 超时之后清除缓存
-    //TODO 实现并发存储  需要前端实现并发传输进行测试
     private val fileIdMap = mutableMapOf<String, JsonObject>()
     private val fileIdToUploadResultMap = mutableMapOf<String, Pair<String, ByteArrayBuffer>>()
     private val fileIdToPartETagMap = mutableMapOf<String, MutableList<PartETag>>()
@@ -113,11 +115,31 @@ class HandleWithBuffer(vertx: Vertx) {
             fileIdToUploadResultMap.put(fileId, Pair(it.uploadId, byteBuffer))
         }
 
-        //TODO 如何记录该图片是由哪个用户发送给哪个客服的？
         // 图片数据库应该只存储图片信息，至于图片是由哪个用户发给哪个用户的，应该由聊天记录逻辑中处理
 
 //        数据库存储的时候，如果是图片则需要同时存储源文件名称和缩略图文件名称，此时缩略图是不存在的，只有在首次下载的时候才
 //        生成缩略图
+
+        val imagePrefix = "thumbnail"
+        val document = JsonObject()
+                .put("fileName", fileId)
+                .put("contentType", contentType)
+                .put("originName", fileName)
+                .put("path", fileId)
+                .put("thumb", "$imagePrefix-$fileId")
+                .put("suffix", fileName.substringAfterLast("."))
+                .put("created_at", LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
+                .put("created_by", 12) // 应该是记录所有者Id
+
+
+        client.save("upload-files", document) { res ->
+            if (res.succeeded()) {
+                val id = res.result()
+                logger.info("Saved book with id $id")
+            } else {
+                logger.error("存储数据库文件失败", res.cause())
+            }
+        }
 
         //回复客户端 文件Id(新文件名)
         val data = JsonObject()
@@ -205,9 +227,6 @@ class HandleWithBuffer(vertx: Vertx) {
                     //结束S3上传逻辑
                     val complets = s3Service.completeMultipartUpload(bucketName, fileId, uploadId, list)
                     if (complets != null) {
-                        //TODO 数据库中保存该文件记录
-
-
                         logger.info("文件上传结束!")
                     } else {
                         logger.error("文件上传S3 结束失败")
@@ -217,6 +236,7 @@ class HandleWithBuffer(vertx: Vertx) {
                     fileIdToUploadResultMap.remove(fileId)
                     fileIdMap.remove(fileId)
                 }
+
             }
         }
 
