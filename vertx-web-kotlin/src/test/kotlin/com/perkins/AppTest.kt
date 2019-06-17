@@ -13,12 +13,17 @@ import java.nio.ByteBuffer
 import jdk.nashorn.internal.objects.NativeArray.forEach
 import io.vertx.core.file.AsyncFile
 import io.vertx.core.file.OpenOptions
+import io.vertx.kotlin.core.streams.write
 import io.vertx.rx.java.RxHelper
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.codec.digest.Md5Crypt
+import org.apache.tika.mime.MimeTypes
+import org.apache.tika.mime.MimeTypesReader
 import software.amazon.awssdk.utils.Md5Utils
 import sun.security.provider.MD5
 import java.io.*
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.concurrent.Executors
@@ -495,7 +500,65 @@ class AppTest {
     }
 
     @Test
-    fun testMD5(){
+    fun testMD5() {
         println(DigestUtils.md5Hex("werwesadfsdf"))
     }
+
+    @Test
+    fun testFileSystem() {
+        val verxt = Vertx.vertx()
+        val fs = verxt.fileSystem()
+        val inputStream = FileInputStream(File("D:\\zhupingjing\\testFile\\SecureCRT.zip"))
+
+        val option = OpenOptions()
+
+
+
+        fs.open("D:\\zhupingjing\\testFile\\SecureCRT-new.zip", option) {
+            val asyncFile = it.result()
+            asyncFile.endHandler {
+                println("写入结束")
+            }
+
+
+            val blobSize = 1024 * 1024 * 1
+            val byteBuffer = ByteArray(blobSize)
+            var i = 0
+            var count = 0
+            println(Thread.currentThread().name + "主线程")
+
+            while ({ i = inputStream.read(byteBuffer); i }() > -1) {
+                val buffer = Buffer.buffer(byteBuffer.copyOfRange(0, i))
+                asyncFile.write(buffer, (count * blobSize.toLong())) { res ->
+                    if (res.succeeded()) {
+                        //TODO 怎么通过回调关闭数据流？？
+                        //TODO 如何触发endHandle???
+                        asyncFile.flush()
+                        println(Thread.currentThread().name + "第$count 写入完成")
+                    } else {
+                        println(Thread.currentThread().name + "第$count 写入失败")
+                    }
+                }
+                count += 1
+            }
+
+            println(Thread.currentThread().name + "--while out")
+        }
+
+        Thread.sleep(10000000)
+    }
+
+
+    @Test
+    fun testGetFileTyope() {
+        val allTypes = MimeTypes.getDefaultMimeTypes();
+
+//        val contentType = allTypes.getRegisteredMimeType(".png")
+//        println(contentType)
+
+        val path = Paths.get("SecureCRT.zip")
+        val temp = Files.probeContentType(path);
+        println(temp)
+    }
+
 }

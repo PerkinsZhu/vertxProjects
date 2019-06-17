@@ -10,9 +10,13 @@ import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.LoggerFactory
 import org.apache.http.util.ByteArrayBuffer
+import org.apache.tika.mime.MimeType
+import org.apache.tika.mime.MimeTypes
 import org.bson.types.ObjectId
 import java.io.ByteArrayInputStream
 import java.net.URLEncoder
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -77,11 +81,15 @@ class HandleWithBuffer(vertx: Vertx) {
         val fileName = body.getString("fileName")
         val blobCount = body.getInteger("blobCount")
         val contentSize = body.getLong("contentSize")
-        val contentType = body.getString("contentType", "application/octet-stream")
+        var contentType = body.getString("contentType", "")
+        if (contentType.isNullOrBlank()) {
+            val path = Paths.get(fileName)
+            contentType = Files.probeContentType(path)
 
+        }
 
         //生成唯一文件名 格式为  随机串-${bucketName}-s3
-        val fileId = ObjectId.get().toString() +"-"+ fileName.substringBeforeLast(".") + "-im+test-s3." + fileName.substringAfterLast(".")
+        val fileId = ObjectId.get().toString() + "-" + fileName.substringBeforeLast(".") + "-im+test-s3." + fileName.substringAfterLast(".")
 
         //缓存当前文件基本信息
         val meatData = JsonObject()
@@ -94,11 +102,11 @@ class HandleWithBuffer(vertx: Vertx) {
         fileIdToPartETagMap.put(fileId, mutableListOf())
 
 
-        val userMetadata = mutableMapOf<String,String>()
+        val userMetadata = mutableMapOf<String, String>()
         userMetadata["contentType"] = contentType
-        userMetadata["OriginalName"] = URLEncoder.encode(fileName,"UTF-8")
+        userMetadata["OriginalName"] = URLEncoder.encode(fileName, "UTF-8")
         //初始化S3分块上传逻辑
-        val tempResult = s3Service.initiateMultipartUpload(bucketName, fileId,userMetadata)
+        val tempResult = s3Service.initiateMultipartUpload(bucketName, fileId, userMetadata)
         tempResult?.let {
             logger.info("开始上传文件:$fileId,fileName:$fileName")
             val byteBuffer = ByteArrayBuffer(1024 * 1024 * 5)
@@ -106,6 +114,8 @@ class HandleWithBuffer(vertx: Vertx) {
         }
 
         //TODO 如何记录该图片是由哪个用户发送给哪个客服的？
+        // 图片数据库应该只存储图片信息，至于图片是由哪个用户发给哪个用户的，应该由聊天记录逻辑中处理
+
 //        数据库存储的时候，如果是图片则需要同时存储源文件名称和缩略图文件名称，此时缩略图是不存在的，只有在首次下载的时候才
 //        生成缩略图
 
@@ -195,6 +205,9 @@ class HandleWithBuffer(vertx: Vertx) {
                     //结束S3上传逻辑
                     val complets = s3Service.completeMultipartUpload(bucketName, fileId, uploadId, list)
                     if (complets != null) {
+                        //TODO 数据库中保存该文件记录
+
+
                         logger.info("文件上传结束!")
                     } else {
                         logger.error("文件上传S3 结束失败")

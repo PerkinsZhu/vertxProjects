@@ -56,10 +56,13 @@ dependencies {
     compile "io.vertx:vertx-auth-jwt:$vertx_version"
     compile "io.vertx:vertx-hazelcast:$vertx_version"
     compile "com.hazelcast:hazelcast:3.8.2"
-
+    compile "io.vertx:vertx-mongo-client:$vertx_version"
+    compile "io.vertx:vertx-lang-kotlin:$vertx_version"
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-runtime:$kotlin_version"
+
+
 
 //    compile 'software.amazon.awssdk:kinesis'
     compile "software.amazon.awssdk:aws-sdk-java:2.5.54"
@@ -74,6 +77,10 @@ dependencies {
 
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
     compile group: 'log4j', name: 'log4j', version: '1.2.17'
+
+    // 获取文件名后缀工具包
+    // https://mvnrepository.com/artifact/org.apache.tika/tika-core
+    compile group: 'org.apache.tika', name: 'tika-core', version: '1.21'
 
 }
 

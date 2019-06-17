@@ -444,10 +444,10 @@ class Handle(vertx: Vertx) {
     }
 }
 
-val projectPath = System.getProperty("user.dir") + "/vertx-web-kotlin"
+val projectTempPath = System.getProperty("user.dir") + File.separator + "temp" + File.separator
 
 fun writeDataToFile(filePath: String, data: ByteArray) {
-    val file = File(projectPath + File.separator + filePath)
+    val file = File(projectTempPath  + File.separator + filePath)
     println(file.absolutePath)
     if (!file.exists()) {
         file.createNewFile()

@@ -9,21 +9,21 @@ import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.ext.web.RoutingContext
+import io.vertx.kotlin.core.json.json
+import io.vertx.kotlin.core.json.obj
 import net.coobird.thumbnailator.Thumbnails
 //import io.vertx.rxjava.core.buffer.Buffer
 //import io.vertx.rxjava.core.http.HttpServerResponse
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.services.devicefarm.model.Run
-import software.amazon.ion.system.IonTextWriterBuilder.json
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
-import java.net.URLDecoder
+import java.lang.RuntimeException
 import java.net.URLEncoder
 
 class BaseHandle(vertx: Vertx) {
     val fs = vertx.fileSystem()
-val workerExecutor = vertx.createSharedWorkerExecutor("workExecutor")
+    val workerExecutor = vertx.createSharedWorkerExecutor("workExecutor")
     val imagePrefix = "thumbnail"
     val logger = LoggerFactory.getLogger(this.javaClass)
     val accessKey = PropertiesUtil.get("accessKey")
@@ -47,7 +47,6 @@ val workerExecutor = vertx.createSharedWorkerExecutor("workExecutor")
                 if (fileName.startsWith(imagePrefix)) {
                     //判断请求的是否是缩略图，如果是缩略图，则判断是否存在，
                     // 如果不存在，则生成缩略图，返回给client，同时上传到S3
-                    //TODO 下载原图片，生成缩略图、上传缩略图到S3同时返回缩略图到客户端
                     val sourceFileName = fileName.substringAfter("$imagePrefix-")
                     val sourceFile = s3Service.getObject(bucketName, sourceFileName)
                     if (sourceFile != null) {
@@ -56,82 +55,48 @@ val workerExecutor = vertx.createSharedWorkerExecutor("workExecutor")
                         // 注：s3 会默认把userMetadata中的key全换转换为小写，这里取值的时候全部按照小写取值
                         val metaDataOriginName = metadata.userMetadata.getOrDefault("originalname", "data")
                         val metaDataContentType = metadata.userMetadata.getOrDefault("contenttype", "application/octet-stream")
-                        val fileSuffix = metaDataOriginName.substringAfterLast(".", "png")
 
-                        //TODO 注意这里的路径 ,尝试怎么找到vertx的默认路径
-                        val tempFilePath = projectPath + File.separator + "uploads/$sourceFileName"
-                        val tempTargetFilePath = projectPath + File.separator + "uploads/$fileName"
-
-                        saveFileWithBlocking(sourceFile.objectContent, tempFilePath)
-
-                        thumbnailsImage(tempFilePath, tempTargetFilePath)
+                        val tempTargetFilePath = projectTempPath + fileName
+                        println(tempTargetFilePath)
+                        thumbnailsImage(sourceFile.objectContent, tempTargetFilePath)
                         //开线程上传缩略图
-                        Thread(Runnable {
+                        workerExecutor.executeBlocking<Void>({ future ->
                             val fileKey = "$fileName"
                             val userMetadata = mutableMapOf<String, String>()
                             userMetadata["contentType"] = metaDataContentType
-                            userMetadata["source"] = URLEncoder.encode("sourceFileName","UTF-8")
+                            userMetadata["source"] = URLEncoder.encode("sourceFileName", "UTF-8")
                             userMetadata["OriginalName"] = metaDataOriginName
                             val imagePutObjectResult = s3Service.addObject(bucketName, fileKey, tempTargetFilePath, userMetadata)
                             if (imagePutObjectResult == null) {
                                 logger.error("upload ThumbnailsImage to  S3 error")
-                            }else{
+                                future.fail(RuntimeException("S3 上传缩略图失败"))
+                            } else {
                                 logger.info("缩略图上传S3成功")
+                                future.complete()
                             }
-                        }).start()
+                        }, {
+                            if (it.succeeded()) {
+                                Thread(Runnable {
+                                    Thread.sleep(10000) // 延时10S等待后台把文件数据全部传输给client端
+                                    fs.delete(tempTargetFilePath) { del ->
+                                        if (del.succeeded()) {
+                                            logger.debug("缩略图临时文件删除成功")
+                                        } else {
+                                            logger.error("缩略图临时文件删除成功", del.cause())
+                                        }
+                                    }
+                                }).start()
+                            } else {
+                                logger.error("发生未知异常", it.cause())
+                            }
+                        })
                         // 发送剪切图片
                         sendFileData(response, metaDataContentType, metaDataOriginName, FileInputStream(tempTargetFilePath))
                         response.end()
 
-
-                        //TODO 调研如何使用vertx的文件写入实现异步操作，如何等待文件全部写完成之后调用end方法？
-                        /*fs.open(tempFilePath, OpenOptions()) {
-                            if (it.succeeded()) {
-                                val asyncFile = it.result()
-                                val buffer = Buffer.buffer()
-                                val arraySize = 1024 * 1024 * 5
-                                val array = ByteArray(arraySize)
-                                //TODO 上传图片的时候需要把文件的真是名称设置进去，然后下载的时候再返回给前端
-                                //TODO 如何记录该图片是由哪个用户发送给哪个客服的？
-                                val dataBuffer = sourceFile.objectContent.buffered()
-                                var position = 0
-
-                                //ZPJ 这个endHandler 如何触发？是需要程序主动end来触发吗？
-                                asyncFile.endHandler {
-                                    logger.info("---文件下载结束----")
-                                    println("---文件下载结束----")
-                                     asyncFile.close()
-                                      //生成剪切图片
-                                      thumbnailsImage(tempFilePath,tempTaegetFilePath)
-                                      //TODO 开线程上传缩略图
-                                      // 发送剪切图片
-                                      sendFileData(response, metaDataContentType, metaDataOriginName, FileInputStream(tempTaegetFilePath))
-                                      response.end()
-                                }
-                                println("==== 开始写文件数据")
-                                while (dataBuffer.read(array) > -1) {
-                                    asyncFile.write(Buffer.buffer(array), (position * arraySize).toLong()) {
-                                        if (it.succeeded()) {
-                                            logger.info("写第$position 块数据成功")
-                                            println("写第$position 块数据成功")
-                                            asyncFile.flush()
-    //                                        asyncFile.end()
-                                        } else {
-                                            it.cause().printStackTrace()
-                                        }
-                                    }
-                                    println(asyncFile.hashCode())
-
-                                    position += 1
-                                }
-                                println("==== 写文件数据结束")
-                            } else {
-                                logger.error("error")
-                            }
-                        }*/
-
                     } else {
                         logger.error("----源文件丢失！！")
+                        //TODO 按照接口规范返回接送对象
                         response.end("can not found file in the S3")
                     }
                 } else {
@@ -139,13 +104,17 @@ val workerExecutor = vertx.createSharedWorkerExecutor("workExecutor")
                     response.end("can not found file in the S3")
                 }
             }
-        },{})
+        }, {})
     }
 
-    private fun thumbnailsImage(tempFilePath: String, tempTaegetFilePath: String?) {
+    private fun thumbnailsImage(source: InputStream, tempTargetFilePath: String?) {
+        val file = File(tempTargetFilePath)
+        if (file.parentFile != null && !file.parentFile.exists()) {
+            file.parentFile.mkdirs()
+        }
         val uploadThumbWidth = 108
         val uploadThumbHeight = 108
-        Thumbnails.of(tempFilePath).size(uploadThumbWidth, uploadThumbHeight).toFile(File(tempTaegetFilePath))
+        Thumbnails.of(source).size(uploadThumbWidth, uploadThumbHeight).toFile(File(tempTargetFilePath))
         println("生成缩略图完成")
     }
 
@@ -205,10 +174,15 @@ val workerExecutor = vertx.createSharedWorkerExecutor("workExecutor")
         sourceFile.createNewFile()
         return sourceFile
     }
+
+
+    fun io.vertx.rxjava.core.http.HttpServerResponse.endFailure(message: String, statusCode: Int) {
+        this.setStatusCode(statusCode).putHeader("Content-Type", "application/json")
+                .end(
+                        json { obj("success" to false, "message" to message, "code" to statusCode) }.encode()
+                )
+    }
+
 }
 
-/*
-fun io.vertx.rxjava.core.http.HttpServerResponse.endFailure(message: String) {
-    this.setStatusCode(statusCode).putHeader("Content-Type", "application/json")
-            .end(json { obj("success" to false, "message" to message, "code" to statusCode) }.encode())
-}*/
+
