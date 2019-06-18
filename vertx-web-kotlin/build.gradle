@@ -62,8 +62,6 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-runtime:$kotlin_version"
 
-
-
 //    compile 'software.amazon.awssdk:kinesis'
     compile "software.amazon.awssdk:aws-sdk-java:2.5.54"
     compile "software.amazon.awssdk:s3:2.5.54"
@@ -75,8 +73,11 @@ dependencies {
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
     compile group: 'commons-codec', name: 'commons-codec', version: '1.12'
 
+    // 使用logback日志文件
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
-    compile group: 'log4j', name: 'log4j', version: '1.2.17'
+    compile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+
 
     // 获取文件名后缀工具包
     // https://mvnrepository.com/artifact/org.apache.tika/tika-core
