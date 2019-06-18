@@ -22,18 +22,20 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
 
+    val flieColllection = "upload-files"
     val executor = vertx.createSharedWorkerExecutor("myWorker")
     val fs = vertx.fileSystem()
     // 上传完成之后清除缓存数据
     // 超时之后清除缓存
-    private val fileIdMap = mutableMapOf<String, JsonObject>()
-    private val fileIdToUploadResultMap = mutableMapOf<String, Pair<String, ByteArrayBuffer>>()
-    private val fileIdToPartETagMap = mutableMapOf<String, MutableList<PartETag>>()
+    private val fileIdMap = ConcurrentHashMap<String, JsonObject>()
+    private val fileIdToUploadResultMap = ConcurrentHashMap<String, Pair<String, ByteArrayBuffer>>()
+    private val fileIdToPartETagMap = ConcurrentHashMap<String, MutableList<PartETag>>()
 
     val accessKey = PropertiesUtil.get("accessKey")
     val secretKey = PropertiesUtil.get("secretKey")
@@ -45,22 +47,26 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
     init {
         val executor = Executors.newScheduledThreadPool(1)
         // 缓存有效期设置为1分钟，定时器执行间隔1分钟，因此，实际上缓存存活时间在1-2分钟之间
-        val timeOut = 1000000000 * 60 * 1L
+        val timeOut = 1000000000L * 60 * 1
+//        val timeOut = 1000000000L * 20 * 1
         executor.scheduleAtFixedRate({
             logger.info("任务超时，清理缓存数据，终止分块上传任务")
-            val expirationTime = System.nanoTime() - timeOut
+            val temp = System.nanoTime()
+            val expirationTime = temp - timeOut
             val cleanKeys = fileIdMap.filter { entry ->
                 val value = entry.value
                 val createTime = value.getLong("createTime")
+                logger.info("$temp-$timeOut=${expirationTime}")
+                logger.info("${expirationTime > createTime}")
                 expirationTime > createTime
             }.map { it.key }
             cleanKeys.forEach { key ->
+                logger.info("删除过期的数据---$key")
+
                 fileIdToUploadResultMap.get(key)?.first?.let { uploadId ->
-                    try {//终止分块上传逻辑
-                        s3Service.abortMultipartUpload(bucketName, key, uploadId)
-                    } catch (e: Exception) {
-                        logger.error("终止分块上传任务失败,key:$key,uploadId:$uploadId", e)
-                    }
+                    val fileMetaData = fileIdMap.get(key)
+                    val _id = fileMetaData?.getString("_id") ?: ""
+                    cleanFailData(key, uploadId, _id)
                 }
 
                 fileIdMap.remove(key)
@@ -68,7 +74,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
                 fileIdToPartETagMap.remove(key)
             }
             logger.info("当前缓存数量:fileIdMap:${fileIdMap.size},fileIdToUploadResultMap:${fileIdToUploadResultMap.size},fileIdToPartETagMap:${fileIdToPartETagMap.size}")
-        }, 1L, 1L, TimeUnit.MINUTES)
+        }, 1L, 1L, TimeUnit.SECONDS)
     }
 
     private fun getResult(data: JsonObject, code: Int, msg: String? = null): JsonObject {
@@ -136,13 +142,14 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
                 .put("contentType", contentType)
                 .put("originName", fileName)
                 .put("path", fileId)
-                .put("thumb", "$imagePrefix-$fileId")
                 .put("suffix", fileName.substringAfterLast("."))
                 .put("created_at", LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
                 .put("created_by", 12) // 应该是记录所有者Id
+        if (contentType.startsWith("image/")) {
+            document.put("thumb", "$imagePrefix-$fileId")
+        }
 
-
-        client.save("upload-files", document) { res ->
+        client.save(flieColllection, document) { res ->
             if (res.succeeded()) {
                 val id = res.result()
                 meatData.put("_id", id) // 保存数据库的_id
@@ -219,8 +226,6 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
                     isSend = true
                 }
 
-
-
                 logger.debug("=============第$currentBlogNum 块数据写入结束=============")
                 if (currentBlogNum == blobCount.toString()) {
                     if (!isSend) {
@@ -239,17 +244,8 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
                     if (complets != null) {
                         logger.info("文件上传结束!")
                     } else {
-
-                        try {//终止分块上传逻辑
-                            s3Service.abortMultipartUpload(bucketName, fileId, uploadId)
-                        } catch (e: Exception) {
-                            logger.error("终止分块上传任务失败,key:$fileId,uploadId:$uploadId", e)
-                        }
-                        //删除数据库记录
-                        val _id = fileMetaData.getInteger("_id")
-                        val query = JsonObject().put("_id", _id)
-                        client.findOneAndDelete("", query, MongodbHandle.baseHandle("S3文件上传失败，删除数据库记录[$_id]"))
-
+                        val _id = fileMetaData.getString("_id")
+                        cleanFailData(fileId, uploadId, _id)
                         logger.error("文件上传S3 结束失败")
                     }
                     byteBuffer.clear()
@@ -264,6 +260,17 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         val data = JsonObject()
         val result = getResult(data, 0, "第$currentBlogNum 块文件上传成功")
         msg.reply(result)
+    }
+
+    private fun cleanFailData(fileId: String, uploadId: String, _id: String) {
+        try {//终止分块上传逻辑
+            s3Service.abortMultipartUpload(bucketName, fileId, uploadId)
+        } catch (e: Exception) {
+            logger.error("终止分块上传任务失败,key:$fileId,uploadId:$uploadId", e)
+        }
+        //删除数据库记录
+        val query = JsonObject().put("_id", _id)
+        client.findOneAndDelete(flieColllection, query, MongodbHandle.baseHandle("S3文件上传失败，删除数据库记录[$_id]"))
     }
 
     private fun sendToS3(byteBuffer: ByteArrayBuffer, fileId: String, uploadId: String, sendCount: Int): UploadPartResult? {

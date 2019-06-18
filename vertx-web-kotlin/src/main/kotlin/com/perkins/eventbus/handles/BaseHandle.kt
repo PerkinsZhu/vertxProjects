@@ -125,6 +125,10 @@ class BaseHandle(vertx: Vertx) {
 
     private fun sendS3Object(response: HttpServerResponse, contentType: String?, fileName: String?, s3Object: S3Object) {
         val metadata = s3Object.objectMetadata
+        metadata.userMetadata.forEach{
+            logger.info("${it.key}-->${it.value}")
+        }
+
         // 注：s3 会默认把userMetadata中的key全换转换为小写，这里取值的时候全部按照小写取值
         val metaDataOriginName = metadata.userMetadata.getOrDefault("originalname", "data")
         val metaDataContentType = metadata.userMetadata.getOrDefault("contenttype", "application/octet-stream")

@@ -346,8 +346,27 @@ class AppTest {
     @Test
     fun testMulitUploadFileWithJava() {
         val (bucketName, service) = getS3Server()
-        val filePath = "D:\\zhupingjing\\testFile\\Studio 3T.zip"
-        service.testJavaUpload(bucketName, "aaaaaaaaaaaaa.zip", filePath)
+        val filePath = "D:\\zhupingjing\\testFile\\Unicode编码表.png"
+//        val filePath = "D:\\zhupingjing\\testFile\\sokit-1-3-win32-chs.zip"
+//        service.testJavaUpload(bucketName, "sokit-1-3-win32-chs.zip", filePath)
+        service.testJavaUpload(bucketName, "Unicode编码表.png", filePath)
+    }
+
+
+    @Test
+    fun testMulitUploadFileWithJava2() {
+        val (bucketName, service) = getS3Server()
+
+        val list= mutableListOf<String>()
+        list.add("D:\\zhupingjing\\testFile\\sokit-1-3-win32-chs.zip")
+        list.add("D:\\zhupingjing\\testFile\\Unicode编码表.png")
+
+        list.forEach {
+            service.testJavaUpload(bucketName, it.substringAfterLast("\\"), it)
+        }
+//        val filePath =
+//        service.testJavaUpload(bucketName, "sokit-1-3-win32-chs.zip", filePath)
+//        service.testJavaUpload(bucketName, "Unicode编码表.png", filePath)
     }
 
     @Test
@@ -375,6 +394,18 @@ class AppTest {
             }
         }
     }
+
+
+    @Test
+    fun testGetMetaData() {
+        val (bucketName, service) = getS3Server()
+//        val data = service.getObject(bucketName, "sokit-1-3-win32-chs.zip")
+        val data = service.getObject(bucketName, "5d08933088df740c70185ed4-sokit-1-3-win32-chs-im+test-s3.zip")
+        data?.objectMetadata?.userMetadata?.forEach{
+            S3Service.logger.info("upload -->  ${it.key}--->${it.value}")
+        }
+    }
+
 
     @Test
     fun testNio() {

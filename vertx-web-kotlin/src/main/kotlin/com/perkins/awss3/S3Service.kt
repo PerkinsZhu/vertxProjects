@@ -10,38 +10,41 @@ import com.amazonaws.services.s3.model.*
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.s3.S3Client
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
 
-class S3Service constructor(accessKey: String, secretKey: String, endpoint: String) {
+class S3Service constructor(val accessKey: String, val secretKey: String, val endpoint: String) {
     companion object {
         val logger = LoggerFactory.getLogger(this.javaClass)
     }
-
-    private var amazonS3: AmazonS3
 
     init {
         if (accessKey.isNullOrBlank() || secretKey.isNullOrBlank() || endpoint.isNullOrBlank()) {
             logger.error("S3 config missing")
             throw  RuntimeException("S3 config missing")
-        } else {
-            val sessionCredentials = BasicSessionCredentials(accessKey, secretKey, "")
-            amazonS3 = AmazonS3ClientBuilder.standard()
-                    .withPathStyleAccessEnabled(true)
-                    .disableChunkedEncoding()
-                    .withCredentials(AWSStaticCredentialsProvider(sessionCredentials))
-                    .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(endpoint, Regions.CN_NORTH_1.name))
-                    .build()
         }
     }
+
+    fun getAmazonS3(): AmazonS3 {
+        val sessionCredentials = BasicSessionCredentials(accessKey, secretKey, "")
+        return AmazonS3ClientBuilder.standard()
+                .withPathStyleAccessEnabled(true)
+                .disableChunkedEncoding()
+                .withCredentials(AWSStaticCredentialsProvider(sessionCredentials))
+                .withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration(endpoint, Regions.CN_NORTH_1.name))
+                .build()
+    }
+
 
     /**
      * 查询bucketName下的所有object
      */
     fun listFiles(bucketName: String): JsonArray {
+        val amazonS3 = getAmazonS3()
         val jsonArray = JsonArray()
         try {
             val objectListing = amazonS3.listObjects(ListObjectsRequest().withBucketName(bucketName))
@@ -63,6 +66,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
      * 查询所有的Bucket
      */
     fun getBucketList(): JsonArray {
+        val amazonS3 = getAmazonS3()
         val jsonArray = JsonArray()
         try {
             amazonS3.listBuckets().map { bucket ->
@@ -83,6 +87,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
      * 上传失败返回null
      */
     fun addObject(bucketName: String, key: String, filePath: String, userMetadata: Map<String, String>? = null): PutObjectResult? {
+        val amazonS3 = getAmazonS3()
         logger.info("addObject to S3, bucketName:$bucketName,fileKey:$key,filePath:$filePath")
         return try {
             val putObjectRequest = PutObjectRequest(bucketName, key, File(filePath))
@@ -103,6 +108,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
      * 返回状态无意义
      */
     fun deleteObject(bucketName: String, key: String): Boolean {
+        val amazonS3 = getAmazonS3()
         amazonS3.deleteObject(bucketName, key)
         return true
     }
@@ -111,6 +117,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
      * 获取bucket下面指定的s3Object
      */
     fun getObject(bucketName: String, key: String): S3Object? {
+        val amazonS3 = getAmazonS3()
         logger.debug("getObject ($bucketName.$key) in S3")
         return try {
             val request = GetObjectRequest(bucketName, key)
@@ -122,9 +129,14 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
     }
 
     fun initiateMultipartUpload(bucketName: String, key: String, userMetadata: Map<String, String>? = null): InitiateMultipartUploadResult? {
+        val amazonS3 = getAmazonS3()
         // 这里支持metadata
         val request = InitiateMultipartUploadRequest(bucketName, key)
         userMetadata?.let {
+            userMetadata.forEach {
+                logger.info("upload -->  ${it.key}--->${it.value}")
+            }
+
             val metadata = ObjectMetadata()
             metadata.userMetadata = it
             request.withObjectMetadata(metadata)
@@ -135,7 +147,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
 
     fun uploadPart(bucketName: String, key: String, uploadId: String, partNum: Int, inputStream: InputStream, partSize: Long): UploadPartResult? {
         logger.info("第$partNum,大小:$partSize")
-
+        val amazonS3 = getAmazonS3()
         val uploadPartRequest = UploadPartRequest()
                 .withUploadId(uploadId)
                 .withPartNumber(partNum)
@@ -147,6 +159,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
     }
 
     fun uploadPart(bucketName: String, key: String, uploadId: String, partNum: Int, file: File, partSize: Long): UploadPartResult? {
+        val amazonS3 = getAmazonS3()
         val uploadPartRequest = UploadPartRequest()
                 .withUploadId(uploadId)
                 .withPartNumber(partNum)
@@ -161,6 +174,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
 
     fun completeMultipartUpload(bucketName: String, key: String, uploadId: String, eTagList: List<PartETag>): CompleteMultipartUploadResult? {
         logger.info("completeMultipartUpload------${bucketName}--$key--$uploadId--${eTagList.size}")
+        val amazonS3 = getAmazonS3()
         val complete = CompleteMultipartUploadRequest()
                 .withUploadId(uploadId)
                 .withBucketName(bucketName)
@@ -173,6 +187,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
      * 分块上传文件到S3
      */
     fun mulitUpload(bucketName: String, key: String, filePath: String) {
+        val amazonS3 = getAmazonS3()
         val initResult = initiateMultipartUpload(bucketName, key)
         if (initResult != null) {
             val uploadId = initResult.uploadId
@@ -196,6 +211,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
     }
 
     fun abortMultipartUpload(bucketName: String, key: String, uploadId: String) {
+        val amazonS3 = getAmazonS3()
         amazonS3.abortMultipartUpload(AbortMultipartUploadRequest(bucketName, key, uploadId))
     }
 
@@ -234,6 +250,8 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
      * 从磁盘中读取整个文件进行分块上传
      */
     private fun mulitUploadWithFile(filePath: String, bucketName: String, key: String, uploadId: String): MutableList<PartETag> {
+        val amazonS3 = getAmazonS3()
+
         val file = File(filePath)
         val fileSize = file.length()
         var blobSize = 1024 * 1024 * 5L
@@ -272,11 +290,13 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
      * 调用java客户端测试分块上传
      */
     fun testJavaUpload(bucketName: String, key: String, filePath: String) {
+        val amazonS3 = getAmazonS3()
         UploadObjectMPULowLevelAPI.testUploadFile(amazonS3, key, bucketName, filePath)
     }
 
     // 调用java客户端测试
     fun testJavaListMultipartUploads(bucketName: String): List<MultipartUpload> {
+        val amazonS3 = getAmazonS3()
         return UploadObjectMPULowLevelAPI.listMultipartUploads(amazonS3, bucketName)
     }
 

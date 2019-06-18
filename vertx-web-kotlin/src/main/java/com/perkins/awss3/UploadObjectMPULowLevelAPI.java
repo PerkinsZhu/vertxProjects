@@ -6,20 +6,32 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class UploadObjectMPULowLevelAPI {
 
 
-    public static void testUploadFile(AmazonS3 s3Client, String keyName, String existingBucketName, String filePath) {
+    public static void testUploadFile(AmazonS3 s3Client, String keyName, String existingBucketName, String filePath) throws IOException {
 
         // Create a list of UploadPartResponse objects. You get one of these
         // for each part upload.
         List<PartETag> partETags = new ArrayList<PartETag>();
 
         // Step 1: Initialize.
+
+        Path path = Paths.get(filePath);
+        String contentType = Files.probeContentType(path);
+        ObjectMetadata data = new ObjectMetadata();
+        data.addUserMetadata("contenttype", contentType);
+        System.out.printf("contetype--->" + data.getUserMetadata().get("contenttype"));
         InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(existingBucketName, keyName);
+        initRequest.withObjectMetadata(data);
         InitiateMultipartUploadResult initResponse = s3Client.initiateMultipartUpload(initRequest);
 
         File file = new File(filePath);
@@ -61,7 +73,7 @@ public class UploadObjectMPULowLevelAPI {
     }
 
     // 列出正在分段上传的任务，这些任任务可能是分段上传失败忘记终止的任务
-    public static List<MultipartUpload> listMultipartUploads(AmazonS3 s3Client,String bucketName){
+    public static List<MultipartUpload> listMultipartUploads(AmazonS3 s3Client, String bucketName) {
         try {
             // Retrieve a list of all in-progress multipart uploads.
             ListMultipartUploadsRequest allMultipartUploadsRequest = new ListMultipartUploadsRequest(bucketName);
@@ -74,13 +86,11 @@ public class UploadObjectMPULowLevelAPI {
                 System.out.println("Upload in progress: Key = \"" + u.getKey() + "\", id = " + u.getUploadId());
             }
             return uploads;
-        }
-        catch(AmazonServiceException e) {
+        } catch (AmazonServiceException e) {
             // The call was transmitted successfully, but Amazon S3 couldn't process
             // it, so it returned an error response.
             e.printStackTrace();
-        }
-        catch(SdkClientException e) {
+        } catch (SdkClientException e) {
             // Amazon S3 couldn't be contacted for a response, or the client
             // couldn't parse the response from Amazon S3.
             e.printStackTrace();
