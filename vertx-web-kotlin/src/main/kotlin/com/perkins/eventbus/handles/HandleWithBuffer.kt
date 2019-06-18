@@ -5,11 +5,13 @@ import com.amazonaws.services.s3.model.UploadPartResult
 import com.perkins.awss3.S3Service
 import com.perkins.common.PropertiesUtil
 import com.perkins.handlers.AbstractHandle
+import com.perkins.handlers.MongodbHandle
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.kotlin.core.json.json
 import org.apache.http.util.ByteArrayBuffer
 import org.apache.tika.mime.MimeType
 import org.apache.tika.mime.MimeTypes
@@ -45,7 +47,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         // 缓存有效期设置为1分钟，定时器执行间隔1分钟，因此，实际上缓存存活时间在1-2分钟之间
         val timeOut = 1000000000 * 60 * 1L
         executor.scheduleAtFixedRate({
-            logger.info("clean cache data")
+            logger.info("任务超时，清理缓存数据，终止分块上传任务")
             val expirationTime = System.nanoTime() - timeOut
             val cleanKeys = fileIdMap.filter { entry ->
                 val value = entry.value
@@ -53,6 +55,14 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
                 expirationTime > createTime
             }.map { it.key }
             cleanKeys.forEach { key ->
+                fileIdToUploadResultMap.get(key)?.first?.let { uploadId ->
+                    try {//终止分块上传逻辑
+                        s3Service.abortMultipartUpload(bucketName, key, uploadId)
+                    } catch (e: Exception) {
+                        logger.error("终止分块上传任务失败,key:$key,uploadId:$uploadId", e)
+                    }
+                }
+
                 fileIdMap.remove(key)
                 fileIdToUploadResultMap.remove(key)
                 fileIdToPartETagMap.remove(key)
@@ -90,7 +100,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
 
         }
 
-        //生成唯一文件名 格式为  随机串-${bucketName}-s3
+        //生成唯一文件名 格式为  随机串-${bucketName}-s3 。上传到S3时以该Id命名
         val fileId = ObjectId.get().toString() + "-" + fileName.substringBeforeLast(".") + "-im+test-s3." + fileName.substringAfterLast(".")
 
         //缓存当前文件基本信息
@@ -111,7 +121,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         val tempResult = s3Service.initiateMultipartUpload(bucketName, fileId, userMetadata)
         tempResult?.let {
             logger.info("开始上传文件:$fileId,fileName:$fileName")
-            val byteBuffer = ByteArrayBuffer(1024 * 1024 * 5)
+            val byteBuffer = ByteArrayBuffer(1024 * 1024 * 1)
             fileIdToUploadResultMap.put(fileId, Pair(it.uploadId, byteBuffer))
         }
 
@@ -135,6 +145,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         client.save("upload-files", document) { res ->
             if (res.succeeded()) {
                 val id = res.result()
+                meatData.put("_id", id) // 保存数据库的_id
                 logger.info("Saved book with id $id")
             } else {
                 logger.error("存储数据库文件失败", res.cause())
@@ -169,12 +180,12 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
             throw  RuntimeException("文件初始化异常")
         } else {
             val fileName = fileMetaData.getString("fileName")
-            val contentType = fileMetaData.getString("contentType")
             val blobCount = fileMetaData.getInteger("blobCount")
-            val contentSize = fileMetaData.getLong("contentSize")
 
             logger.debug("fileName:$fileName,blobCount:$blobCount,currentBlogCount:$currentBlogNum")
+
             val byteArray = dataBody.toByteArray(Charsets.ISO_8859_1)
+
             initResult?.let {
                 logger.debug("=============共 $blobCount 块数据，开始写入第$currentBlogNum 块数据=============")
                 val uploadId = it.first
@@ -187,7 +198,6 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
                 if (bufferSize + dataSize > cpat) {  // 判断缓存是否装满，如果装满了就发送，没装满不发送。S3分段上传的时候貌似只支持1024的整数倍
                     remain = cpat - bufferSize //本次接收到但是未发送的数据
                     byteBuffer.append(byteArray, 0, remain)
-                    println("$bufferSize-- $dataSize--$remain")
                 } else {
                     // 由于后端做buffer缓存前段数据，如果前段并发不按照顺序发送数据，则后端就需要缓存所有的数据，
                     // 等待前段全部发送成功之后再
@@ -229,6 +239,17 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
                     if (complets != null) {
                         logger.info("文件上传结束!")
                     } else {
+
+                        try {//终止分块上传逻辑
+                            s3Service.abortMultipartUpload(bucketName, fileId, uploadId)
+                        } catch (e: Exception) {
+                            logger.error("终止分块上传任务失败,key:$fileId,uploadId:$uploadId", e)
+                        }
+                        //删除数据库记录
+                        val _id = fileMetaData.getInteger("_id")
+                        val query = JsonObject().put("_id", _id)
+                        client.findOneAndDelete("", query, MongodbHandle.baseHandle("S3文件上传失败，删除数据库记录[$_id]"))
+
                         logger.error("文件上传S3 结束失败")
                     }
                     byteBuffer.clear()

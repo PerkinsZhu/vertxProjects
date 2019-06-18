@@ -9,9 +9,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.*
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
-import io.vertx.core.logging.Logger
-import io.vertx.core.logging.LoggerFactory
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -20,7 +18,7 @@ import java.nio.ByteBuffer
 
 class S3Service constructor(accessKey: String, secretKey: String, endpoint: String) {
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(this.javaClass)
+        val logger = LoggerFactory.getLogger(this.javaClass)
     }
 
     private var amazonS3: AmazonS3
@@ -179,7 +177,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
         if (initResult != null) {
             val uploadId = initResult.uploadId
             try {
-                val list = mulitUploadWithInputStream(filePath,bucketName, key, uploadId)
+                val list = mulitUploadWithInputStream(filePath, bucketName, key, uploadId)
 
 //                val list = mulitUploadWithFile(filePath, bucketName, key, uploadId)
                 val completeMultipartUploadResult = completeMultipartUpload(bucketName, key, uploadId, list)
@@ -206,7 +204,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
 //        val buffer = ByteBuffer.allocate(1024 * 1024 * 5)
         //https://docs.amazonaws.cn/AmazonS3/latest/dev/qfacts.html
         // 分块上传，官方文档限制每段大小在5M以上，最后一段可以小于5M，实际测试在1M以上都是可以的，但是小于1M就会失败
-        val buffer = ByteBuffer.allocate(1024 * 1024 * 2 )
+        val buffer = ByteBuffer.allocate(1024 * 1024 * 2)
         val fileChannel = inputStream.channel
         var partNum = 1;
         val list = mutableListOf<PartETag>()
@@ -278,7 +276,7 @@ class S3Service constructor(accessKey: String, secretKey: String, endpoint: Stri
     }
 
     // 调用java客户端测试
-    fun testJavaListMultipartUploads(bucketName: String) :List<MultipartUpload>{
+    fun testJavaListMultipartUploads(bucketName: String): List<MultipartUpload> {
         return UploadObjectMPULowLevelAPI.listMultipartUploads(amazonS3, bucketName)
     }
 
