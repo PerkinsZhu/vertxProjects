@@ -29,10 +29,11 @@ import java.util.concurrent.TimeUnit
 class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
 
     val flieColllection = "upload-files"
+    val timeOut = 1000L * 60
     val executor = vertx.createSharedWorkerExecutor("myWorker")
     val fs = vertx.fileSystem()
-    // 上传完成之后清除缓存数据
-    // 超时之后清除缓存
+
+    //该缓存在上传完成之后和上传失败之后需要进行清除
     private val fileIdMap = ConcurrentHashMap<String, JsonObject>()
     private val fileIdToUploadResultMap = ConcurrentHashMap<String, Pair<String, ByteArrayBuffer>>()
     private val fileIdToPartETagMap = ConcurrentHashMap<String, MutableList<PartETag>>()
@@ -43,56 +44,12 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
     val bucketName = PropertiesUtil.get("bucketName")
     val s3Service = S3Service(accessKey, secretKey, endpoint)
 
+    val imagePrefix = "thumbnail"
 
-    init {
-        val executor = Executors.newScheduledThreadPool(1)
-        // 缓存有效期设置为1分钟，定时器执行间隔1分钟，因此，实际上缓存存活时间在1-2分钟之间
-        val timeOut = 1000000000L * 60 * 1
-//        val timeOut = 1000000000L * 20 * 1
-        executor.scheduleAtFixedRate({
-            logger.info("任务超时，清理缓存数据，终止分块上传任务")
-            val temp = System.nanoTime()
-            val expirationTime = temp - timeOut
-            val cleanKeys = fileIdMap.filter { entry ->
-                val value = entry.value
-                val createTime = value.getLong("createTime")
-                logger.info("$temp-$timeOut=${expirationTime}")
-                logger.info("${expirationTime > createTime}")
-                expirationTime > createTime
-            }.map { it.key }
-            cleanKeys.forEach { key ->
-                logger.info("删除过期的数据---$key")
 
-                fileIdToUploadResultMap.get(key)?.first?.let { uploadId ->
-                    val fileMetaData = fileIdMap.get(key)
-                    val _id = fileMetaData?.getString("_id") ?: ""
-                    cleanFailData(key, uploadId, _id)
-                }
-
-                fileIdMap.remove(key)
-                fileIdToUploadResultMap.remove(key)
-                fileIdToPartETagMap.remove(key)
-            }
-            logger.info("当前缓存数量:fileIdMap:${fileIdMap.size},fileIdToUploadResultMap:${fileIdToUploadResultMap.size},fileIdToPartETagMap:${fileIdToPartETagMap.size}")
-        }, 1L, 1L, TimeUnit.SECONDS)
-    }
-
-    private fun getResult(data: JsonObject, code: Int, msg: String? = null): JsonObject {
-        val result = JsonObject()
-        result.put("code", code)
-        if (msg.isNullOrBlank()) {
-            val message = when (code) {
-                0 -> "处理成功"
-                else -> "处理失败"
-            }
-            result.put("msg", message)
-        } else {
-            result.put("msg", msg)
-        }
-        result.put("data", data)
-        return result
-    }
-
+    // 图片数据库应该只存储图片信息，至于图片是由哪个用户发给哪个用户的，应该由聊天记录逻辑中处理
+//        数据库存储的时候，如果是图片则需要同时存储源文件名称和缩略图文件名称，此时缩略图是不存在的，只有在首次下载的时候才
+//        生成缩略图
 
     val startMulitUploadToS3 = Handler<Message<JsonObject>> { msg ->
         val body = msg.body()
@@ -103,69 +60,82 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         if (contentType.isNullOrBlank()) {
             val path = Paths.get(fileName)
             contentType = Files.probeContentType(path)
-
         }
 
         //生成唯一文件名 格式为  随机串-${bucketName}-s3 。上传到S3时以该Id命名
         val fileId = ObjectId.get().toString() + "-" + fileName.substringBeforeLast(".") + "-im+test-s3." + fileName.substringAfterLast(".")
-
-        //缓存当前文件基本信息
-        val meatData = JsonObject()
-        meatData.put("fileName", fileName)
-        meatData.put("blobCount", blobCount)
-        meatData.put("contentSize", contentSize)
-        meatData.put("createTime", System.nanoTime())
-        meatData.put("contentType", contentType)
-        fileIdMap.put(fileId, meatData)
-        fileIdToPartETagMap.put(fileId, mutableListOf())
-
 
         val userMetadata = mutableMapOf<String, String>()
         userMetadata["contentType"] = contentType
         userMetadata["OriginalName"] = URLEncoder.encode(fileName, "UTF-8")
         //初始化S3分块上传逻辑
         val tempResult = s3Service.initiateMultipartUpload(bucketName, fileId, userMetadata)
-        tempResult?.let {
-            logger.info("开始上传文件:$fileId,fileName:$fileName")
+
+        var result: JsonObject
+
+        if (tempResult == null) {
+            result = getResult(JsonObject(), 1)
+        } else {
+            val uploadId = tempResult.uploadId
             val byteBuffer = ByteArrayBuffer(1024 * 1024 * 1)
-            fileIdToUploadResultMap.put(fileId, Pair(it.uploadId, byteBuffer))
-        }
+            fileIdToUploadResultMap.put(fileId, Pair(uploadId, byteBuffer))
 
-        // 图片数据库应该只存储图片信息，至于图片是由哪个用户发给哪个用户的，应该由聊天记录逻辑中处理
+            //缓存当前文件基本信息
+            val _id = ObjectId.get().toHexString()
+            val meatData = JsonObject()
+            meatData.put("fileName", fileName)
+            meatData.put("blobCount", blobCount)
+            meatData.put("contentSize", contentSize)
+            meatData.put("createTime", System.nanoTime())
+            meatData.put("contentType", contentType)
+            meatData.put("_id", _id) // 保存数据库的_id
+            fileIdMap.put(fileId, meatData)
+            fileIdToPartETagMap.put(fileId, mutableListOf())
 
-//        数据库存储的时候，如果是图片则需要同时存储源文件名称和缩略图文件名称，此时缩略图是不存在的，只有在首次下载的时候才
-//        生成缩略图
-
-        val imagePrefix = "thumbnail"
-        val document = JsonObject()
-                .put("fileName", fileId)
-                .put("contentType", contentType)
-                .put("originName", fileName)
-                .put("path", fileId)
-                .put("suffix", fileName.substringAfterLast("."))
-                .put("created_at", LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
-                .put("created_by", 12) // 应该是记录所有者Id
-        if (contentType.startsWith("image/")) {
-            document.put("thumb", "$imagePrefix-$fileId")
-        }
-
-        client.save(flieColllection, document) { res ->
-            if (res.succeeded()) {
-                val id = res.result()
-                meatData.put("_id", id) // 保存数据库的_id
-                logger.info("Saved book with id $id")
-            } else {
-                logger.error("存储数据库文件失败", res.cause())
+            // 文件信息存储数据库
+            val document = JsonObject()
+                    .put("_id", _id)
+                    .put("fileName", fileId)
+                    .put("contentType", contentType)
+                    .put("originName", fileName)
+                    .put("path", fileId)
+                    .put("suffix", fileName.substringAfterLast("."))
+                    .put("created_at", LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
+                    .put("created_by", 12) // 应该是记录所有者Id
+            if (contentType.startsWith("image/")) {
+                document.put("thumb", "$imagePrefix-$fileId")
             }
+
+            client.save(flieColllection, document) { res ->
+                if (res.succeeded()) {
+                    val id = res.result()
+
+                    logger.info("Saved $flieColllection with id $id")
+                } else {
+                    logger.error("存储数据库文件失败", res.cause())
+                }
+            }
+
+            // 一分钟之后如果没有处理结束则终止上传任务
+            vertx.setTimer(timeOut) {
+                logger.info("开始处理清理任务[$fileId]")
+                fileIdToUploadResultMap[fileId]?.let {
+                    val uploadId = it.first
+                    cleanFailData(fileId, uploadId, _id)
+                }
+                fileIdMap.remove(fileId)
+                fileIdToUploadResultMap.remove(fileId)
+                fileIdToPartETagMap.remove(fileId)
+                logger.debug("当前缓存数量:fileIdMap:${fileIdMap.size},fileIdToUploadResultMap:${fileIdToUploadResultMap.size},fileIdToPartETagMap:${fileIdToPartETagMap.size}")
+            }
+
+            //回复client 文件Id(新文件名)
+            val data = JsonObject()
+            data.put("fileId", fileId)
+            data.put("thumb", "thumbnail-$fileId")
+            result = getResult(data, 0)
         }
 
-        //回复客户端 文件Id(新文件名)
-        val data = JsonObject()
-        data.put("fileId", fileId)
-        data.put("thumb", "thumbnail-$fileId")
-        data.put("_id", "数据库_id")
-
-        val result = getResult(data, 0)
         msg.reply(result)
     }
 
@@ -262,6 +232,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         msg.reply(result)
     }
 
+    //分块上传失败，终止分块上传任务，清除数据库数据
     private fun cleanFailData(fileId: String, uploadId: String, _id: String) {
         try {//终止分块上传逻辑
             s3Service.abortMultipartUpload(bucketName, fileId, uploadId)
@@ -273,6 +244,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         client.findOneAndDelete(flieColllection, query, MongodbHandle.baseHandle("S3文件上传失败，删除数据库记录[$_id]"))
     }
 
+    //发送分块数据到S3
     private fun sendToS3(byteBuffer: ByteArrayBuffer, fileId: String, uploadId: String, sendCount: Int): UploadPartResult? {
         val sendByteArray = byteBuffer.toByteArray() ?: ByteArray(0)
         logger.info("sendToS3------>$sendCount--->${sendByteArray.size}")

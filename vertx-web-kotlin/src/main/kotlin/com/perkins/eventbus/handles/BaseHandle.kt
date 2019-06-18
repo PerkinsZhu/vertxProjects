@@ -119,7 +119,7 @@ class BaseHandle(vertx: Vertx) {
         } catch (e: Exception) {
             logger.error("生成缩略图失败", e)
         }
-        println("生成缩略图完成")
+        logger.info("生成缩略图完成")
     }
 
 

@@ -18,5 +18,21 @@ open class AbstractHandle {
         client = MongoClient.createShared(vertx, config, "MyPoolName")
     }
 
+    protected fun getResult(data: JsonObject, code: Int, msg: String? = null): JsonObject {
+        val result = JsonObject()
+        result.put("code", code)
+        if (msg.isNullOrBlank()) {
+            val message = when (code) {
+                0 -> "处理成功"
+                else -> "处理失败"
+            }
+            result.put("msg", message)
+        } else {
+            result.put("msg", msg)
+        }
+        result.put("data", data)
+        return result
+    }
+
 
 }
