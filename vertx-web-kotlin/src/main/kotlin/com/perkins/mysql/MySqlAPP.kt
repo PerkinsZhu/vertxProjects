@@ -17,10 +17,23 @@ object MySqlAPP : BaseApp() {
         client.getConnection {
             if (it.succeeded()) {
                 val connection = it.result()
-                addStudent(connection)
+//                addStudent(connection)
+                batchAdd(connection)
                 listStudent(connection)
             }
         }
+    }
+
+    private fun batchAdd(connection: SQLConnection) {
+        val list = mutableListOf<String>()
+        for (i in 1..10) {
+            list.add("insert into student(name,age) values ('xiaohong-$i',${i * 10});")
+        }
+        val action = handle<MutableList<Int>>("添加studnet") {
+            logger.info(it.toString())
+        }
+        connection.batch(list, action)
+
     }
 
     private fun addStudent(connection: SQLConnection) {
@@ -37,7 +50,7 @@ object MySqlAPP : BaseApp() {
             if (it.succeeded()) {
                 val rs = it.result()
                 rs.results.forEach { jr ->
-                    println(jr)
+                    logger.info(jr.toString())
                 }
             }
         }
