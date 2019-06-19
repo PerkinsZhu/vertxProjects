@@ -66,7 +66,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         }
 
         //生成唯一文件名 格式为  随机串-${bucketName}-s3 。上传到S3时以该Id命名
-        val fileId = ObjectId.get().toString() + "-" + fileName.substringBeforeLast(".") + "-im+test-s3." + fileName.substringAfterLast(".")
+        val fileId = ObjectId.get().toString() + "-" + fileName.substringBeforeLast(".").replace(" ", "") + "-im+test-s3." + fileName.substringAfterLast(".")
 
         val userMetadata = mutableMapOf<String, String>()
         userMetadata["contentType"] = contentType

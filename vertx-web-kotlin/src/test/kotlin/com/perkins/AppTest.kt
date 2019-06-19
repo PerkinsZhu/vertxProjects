@@ -606,4 +606,10 @@ class AppTest {
         println(temp)
     }
 
+    @Test
+    fun testReplaceBlank(){
+        val str = "aaa bbb     ccccc"
+        println(str.replace(" ",""))
+    }
+
 }
