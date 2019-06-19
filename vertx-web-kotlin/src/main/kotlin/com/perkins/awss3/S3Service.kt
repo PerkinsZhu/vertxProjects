@@ -300,6 +300,10 @@ class S3Service constructor(val accessKey: String, val secretKey: String, val en
      * 调用java客户端测试分块上传
      */
     fun testJavaUpload(bucketName: String, key: String, filePath: String) {
+        //这里使用一个全局的amazonS3用来测试使用同一个客户端分块上传多个文件的问题。
+        //这里会导致所有文件的metadata都为第一个文件的metadata
+        //实际使用中每次上传文件都有生成一个新的amazonS3对象来进行操作
+//        val amazonS3 = getAmazonS3() // 每次新建AmazonS3对象避免metadata错乱
         UploadObjectMPULowLevelAPI.testUploadFile(amazonS3, key, bucketName, filePath)
     }
 

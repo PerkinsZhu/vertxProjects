@@ -60,13 +60,11 @@ public class UploadObjectMPULowLevelAPI {
 
                 // Upload part and add response to our list.
                 partETags.add(s3Client.uploadPart(uploadRequest).getPartETag());
-
                 filePosition += partSize;
             }
 
             // Step 3: Complete.
-            CompleteMultipartUploadRequest compRequest =
-                    new CompleteMultipartUploadRequest(existingBucketName, keyName, initResponse.getUploadId(), partETags);
+            CompleteMultipartUploadRequest compRequest = new CompleteMultipartUploadRequest(existingBucketName, keyName, initResponse.getUploadId(), partETags);
             s3Client.completeMultipartUpload(compRequest);
             logger.info("文件上传结束"+keyName);
         } catch (Exception e) {

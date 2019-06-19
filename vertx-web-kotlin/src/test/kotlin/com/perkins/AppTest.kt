@@ -358,8 +358,8 @@ class AppTest {
         val (bucketName, service) = getS3Server()
 
         val list= mutableListOf<String>()
-        list.add("D:\\zhupingjing\\testFile\\sokit-1-3-win32-chs.zip")
         list.add("D:\\zhupingjing\\testFile\\Unicode编码表.png")
+        list.add("D:\\zhupingjing\\testFile\\sokit-1-3-win32-chs.zip")
 
         list.forEach {
             service.testJavaUpload(bucketName, it.substringAfterLast("\\"), it)
