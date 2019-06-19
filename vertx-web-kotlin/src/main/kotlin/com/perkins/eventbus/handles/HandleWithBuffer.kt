@@ -60,6 +60,9 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         if (contentType.isNullOrBlank()) {
             val path = Paths.get(fileName)
             contentType = Files.probeContentType(path)
+            if (contentType.isNullOrBlank()) {
+                contentType = "application/octet-stream"
+            }
         }
 
         //生成唯一文件名 格式为  随机串-${bucketName}-s3 。上传到S3时以该Id命名

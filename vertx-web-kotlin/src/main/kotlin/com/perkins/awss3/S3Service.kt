@@ -7,6 +7,7 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.*
+import com.sun.org.apache.xpath.internal.operations.Bool
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.slf4j.LoggerFactory
@@ -22,11 +23,14 @@ class S3Service constructor(val accessKey: String, val secretKey: String, val en
         val logger = LoggerFactory.getLogger(this.javaClass)
     }
 
+    private var amazonS3: AmazonS3
+
     init {
         if (accessKey.isNullOrBlank() || secretKey.isNullOrBlank() || endpoint.isNullOrBlank()) {
             logger.error("S3 config missing")
             throw  RuntimeException("S3 config missing")
         }
+        amazonS3 = getAmazonS3()
     }
 
     fun getAmazonS3(): AmazonS3 {
@@ -211,6 +215,7 @@ class S3Service constructor(val accessKey: String, val secretKey: String, val en
     }
 
     fun abortMultipartUpload(bucketName: String, key: String, uploadId: String) {
+        logger.info("终止文件分块上传bucketName:$bucketName,key:$key")
         val amazonS3 = getAmazonS3()
         amazonS3.abortMultipartUpload(AbortMultipartUploadRequest(bucketName, key, uploadId))
     }
@@ -286,11 +291,15 @@ class S3Service constructor(val accessKey: String, val secretKey: String, val en
     }
 
 
+    fun doesBucketExist(bucketName: String, key: String): Boolean {
+        val s3Client = getAmazonS3()
+        return s3Client.doesObjectExist(bucketName, key)
+    }
+
     /**
      * 调用java客户端测试分块上传
      */
     fun testJavaUpload(bucketName: String, key: String, filePath: String) {
-        val amazonS3 = getAmazonS3()
         UploadObjectMPULowLevelAPI.testUploadFile(amazonS3, key, bucketName, filePath)
     }
 

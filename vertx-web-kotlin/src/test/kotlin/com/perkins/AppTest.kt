@@ -370,6 +370,22 @@ class AppTest {
     }
 
     @Test
+    fun testGetMetaData() {
+        val (bucketName, service) = getS3Server()
+        val list = mutableListOf<String>()
+        list.add("sokit-1-3-win32-chs.zip")
+        list.add("Unicode编码表.png")
+        list.forEach {
+            val data = service.getObject(bucketName, it)
+            data?.objectMetadata?.userMetadata?.forEach {
+                S3Service.logger.info("upload -->  ${it.key}--->${it.value}")
+            }
+        }
+
+    }
+
+
+    @Test
     fun testJavaListMultipartUploads() {
         val (bucketName, service) = getS3Server()
         service.testJavaListMultipartUploads(bucketName)
@@ -396,15 +412,7 @@ class AppTest {
     }
 
 
-    @Test
-    fun testGetMetaData() {
-        val (bucketName, service) = getS3Server()
-//        val data = service.getObject(bucketName, "sokit-1-3-win32-chs.zip")
-        val data = service.getObject(bucketName, "5d08933088df740c70185ed4-sokit-1-3-win32-chs-im+test-s3.zip")
-        data?.objectMetadata?.userMetadata?.forEach{
-            S3Service.logger.info("upload -->  ${it.key}--->${it.value}")
-        }
-    }
+
 
 
     @Test
@@ -544,6 +552,10 @@ class AppTest {
         val option = OpenOptions()
 
 
+        vertx.fileSystem().lprops("/you/path/to/your/file") { event ->
+            event.result()
+        }
+
 
         fs.open("D:\\zhupingjing\\testFile\\SecureCRT-new.zip", option) {
             val asyncFile = it.result()
@@ -557,6 +569,8 @@ class AppTest {
             var i = 0
             var count = 0
             println(Thread.currentThread().name + "主线程")
+
+
 
             while ({ i = inputStream.read(byteBuffer); i }() > -1) {
                 val buffer = Buffer.buffer(byteBuffer.copyOfRange(0, i))

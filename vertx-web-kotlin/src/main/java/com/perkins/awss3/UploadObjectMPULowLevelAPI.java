@@ -4,6 +4,8 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class UploadObjectMPULowLevelAPI {
-
+    static Logger logger = LoggerFactory.getLogger(UploadObjectMPULowLevelAPI.class);
 
     public static void testUploadFile(AmazonS3 s3Client, String keyName, String existingBucketName, String filePath) throws IOException {
 
@@ -29,7 +31,7 @@ public class UploadObjectMPULowLevelAPI {
         String contentType = Files.probeContentType(path);
         ObjectMetadata data = new ObjectMetadata();
         data.addUserMetadata("contenttype", contentType);
-        System.out.printf("contetype--->" + data.getUserMetadata().get("contenttype"));
+        logger.info("contetype--->" + data.getUserMetadata().get("contenttype"));
         InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(existingBucketName, keyName);
         initRequest.withObjectMetadata(data);
         InitiateMultipartUploadResult initResponse = s3Client.initiateMultipartUpload(initRequest);
@@ -66,6 +68,7 @@ public class UploadObjectMPULowLevelAPI {
             CompleteMultipartUploadRequest compRequest =
                     new CompleteMultipartUploadRequest(existingBucketName, keyName, initResponse.getUploadId(), partETags);
             s3Client.completeMultipartUpload(compRequest);
+            logger.info("文件上传结束"+keyName);
         } catch (Exception e) {
             e.printStackTrace();
             s3Client.abortMultipartUpload(new AbortMultipartUploadRequest(existingBucketName, keyName, initResponse.getUploadId()));

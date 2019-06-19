@@ -47,7 +47,7 @@ class Handle(vertx: Vertx) {
         val executor = Executors.newScheduledThreadPool(1)
         // 缓存有效期设置为1分钟，定时器执行间隔1分钟，因此，实际上缓存存活时间在1-2分钟之间
         val timeOut = 1000000000 * 60 * 1L
-        executor.scheduleAtFixedRate({
+        /*executor.scheduleAtFixedRate({
             logger.info("clean cache data")
             val expirationTime = System.nanoTime() - timeOut
             val cleanKeys = fileIdMap.filter { entry ->
@@ -63,7 +63,7 @@ class Handle(vertx: Vertx) {
                 fileIdToFile.remove(key)
             }
             logger.info("当前缓存数量:fileIdToFile:${fileIdToFile.size},fileIdMap:${fileIdMap.size}")
-        }, 1L, 1L, TimeUnit.MINUTES)
+        }, 1L, 1L, TimeUnit.MINUTES)*/
     }
 
     val fileData = Handler<Message<JsonObject>> { msg ->

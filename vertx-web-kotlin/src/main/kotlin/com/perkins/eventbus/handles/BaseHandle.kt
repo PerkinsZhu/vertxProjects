@@ -37,11 +37,11 @@ class BaseHandle(vertx: Vertx) {
         val request = it.request()
         val response = it.response()
         val fileName = request.getParam("fileName")
-        val file = s3Service.getObject(bucketName, fileName)
-
+        val isExist = s3Service.doesBucketExist(bucketName, fileName)
         workerExecutor.executeBlocking<Void>({
-            if (file != null) {
-                sendS3Object(response, null, null, file)
+            if (isExist) {
+                val file = s3Service.getObject(bucketName, fileName)
+                sendS3Object(response, null, null, file!!)
                 response.end()
             } else {
                 if (fileName.startsWith(imagePrefix)) {
@@ -125,7 +125,7 @@ class BaseHandle(vertx: Vertx) {
 
     private fun sendS3Object(response: HttpServerResponse, contentType: String?, fileName: String?, s3Object: S3Object) {
         val metadata = s3Object.objectMetadata
-        metadata.userMetadata.forEach{
+        metadata.userMetadata.forEach {
             logger.info("${it.key}-->${it.value}")
         }
 
