@@ -14,8 +14,9 @@
     var eb = new EventBus('/eventbus/');
 
     //分块发送文件
-    // var contentSize = (1024 * 1024 ) +100 //每次发送的二进制数据长度
-    var contentSize = (20000) //每次发送的二进制数据长度
+    // var contentSize = (1024 * 1024 * 2)//每次发送的二进制数据长度
+    var contentSize = (30000) //每次发送的二进制数据长度
+    // var contentSize = (20000) //每次发送的二进制数据长度
 
     function mulitUploadWithBase64() {
         var files = $('#fileId').prop('files');//获取到文件列表
@@ -62,7 +63,7 @@
             if (end > length) {
                 end = length
             }
-            console.log("截取数据块范围:" + start + "---" + end)
+            console.log("共-"+blobNum+"-块，正在发送第-"+i+"-块，截取数据块范围:" + start + "---" + end)
 
             var currentData = binaryString.substring(start, end) //此次传输的数据
             var header = {"fileId": fileId, "currentBlogNum": (i + 1)} // header中存储当前分块信息

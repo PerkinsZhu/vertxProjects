@@ -15,6 +15,7 @@ import io.vertx.ext.web.handler.sockjs.BridgeOptions
 import io.vertx.ext.web.handler.sockjs.SockJSHandler
 import io.vertx.rxjava.core.RxHelper
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.iot.model.ListThingsInBillingGroupRequest
 
 
 fun main(args: Array<String>) {
@@ -68,8 +69,8 @@ class EventBusVerticle : AbstractVerticle() {
 
         val options = HttpServerOptions()
         // 设置每次http请求长度最大值，该设置会影响整个服务
-//        options.maxWebsocketFrameSize = 1024 * 1024 * 5
-//        options.maxWebsocketMessageSize = 1024 *1024 * 10
+        options.maxWebsocketFrameSize = 1024 * 1024 * 5
+        options.maxWebsocketMessageSize = 1024 *1024 * 10
 
         vertx.createHttpServer(options).requestHandler { router.accept(it) }.listen(8081)
 
@@ -89,6 +90,8 @@ class EventBusVerticle : AbstractVerticle() {
         eb.consumer<JsonObject>("startSendWithBuffer", handlerWithBuffer.startMulitUploadToS3)
         eb.consumer<String>("uploadSendWithBuffer", handlerWithBuffer.mulitUploadWithByteStringAndSendToS3)
 
+        // 测试消息丢失
+        eb.consumer<String>("messageMissing", handler.messageMissing)
 
         // rx  部署 verticle
         /*   val baseVerticle = BaseVerticle()

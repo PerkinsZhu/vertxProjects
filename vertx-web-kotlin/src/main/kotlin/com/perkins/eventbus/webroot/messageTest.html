@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>消息发送测试</title>
+</head>
+<body>
+
+<script src="https://cdn.bootcss.com/pako/1.0.10/pako_deflate.min.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+<script src="//cdn.jsdelivr.net/sockjs/1.0.0/sockjs.min.js"></script>
+<script src="vertx-eventbus.js"></script>
+<script>
+    var eb = new EventBus('/eventbus/');
+
+    function sendMsg() {
+        for (let i = 0; i < 500; i++) {
+            var str = " i am " + i
+            console.log("send -->" + str)
+            eb.send("messageMissing", str, function (obj, json) {
+                var body = json.body
+                console.log("receive-->"+body)
+            })
+        }
+    }
+</script>
+<div style="text-align:center;">
+    消息发送测试
+</div>
+<br>
+<HR align=center width=300 color=#987cb9 SIZE=1>
+<br>
+<div>
+    <div>
+        <button type="button" name="btn" value="send" id="btnId" onclick="sendMsg()"/>
+        send
+    </div>
+</div>
+
+<div>
+    <div id="log"></div>
+</div>
+</body>
+</html>

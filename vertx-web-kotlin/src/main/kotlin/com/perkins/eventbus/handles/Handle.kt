@@ -442,12 +442,22 @@ class Handle(vertx: Vertx) {
         val result = getResult(data, 0, "第$currentBlogNum 块文件上传成功")
         msg.reply(result)
     }
+
+
+    val messageMissing = Handler<Message<String>> { msg ->
+        val str = msg.body()
+        logger.info("receive-->$str")
+        Thread.sleep(100)
+        msg.reply(str)
+    }
+
+
 }
 
 val projectTempPath = System.getProperty("user.dir") + File.separator + "temp" + File.separator
 
 fun writeDataToFile(filePath: String, data: ByteArray) {
-    val file = File(projectTempPath  + File.separator + filePath)
+    val file = File(projectTempPath + File.separator + filePath)
     println(file.absolutePath)
     if (!file.exists()) {
         file.createNewFile()

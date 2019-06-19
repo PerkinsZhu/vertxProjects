@@ -80,7 +80,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
             result = getResult(JsonObject(), 1)
         } else {
             val uploadId = tempResult.uploadId
-            val byteBuffer = ByteArrayBuffer(1024 * 1024 * 1)
+            val byteBuffer = ByteArrayBuffer(1024 * 1024 * 5)
             fileIdToUploadResultMap.put(fileId, Pair(uploadId, byteBuffer))
 
             //缓存当前文件基本信息
@@ -151,6 +151,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
         val fileId = header["fileId"]
 
         val currentBlogNum = header["currentBlogNum"]
+        logger.info(Thread.currentThread().name + "---接收到第$currentBlogNum 块数据请求")
 
         val fileMetaData = fileIdMap.get(fileId)
         val initResult = fileIdToUploadResultMap[fileId]
@@ -167,7 +168,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
             val byteArray = dataBody.toByteArray(Charsets.ISO_8859_1)
 
             initResult?.let {
-                logger.debug("=============共 $blobCount 块数据，开始写入第$currentBlogNum 块数据=============")
+                logger.info("=============共 $blobCount 块数据，开始写入第$currentBlogNum 块数据=============")
                 val uploadId = it.first
                 val byteBuffer = it.second
 
@@ -199,7 +200,7 @@ class HandleWithBuffer(vertx: Vertx) : AbstractHandle() {
                     isSend = true
                 }
 
-                logger.debug("=============第$currentBlogNum 块数据写入结束=============")
+                logger.info("=============第$currentBlogNum 块数据写入结束=============")
                 if (currentBlogNum == blobCount.toString()) {
                     if (!isSend) {
                         val partResult = sendToS3(byteBuffer, fileId, uploadId, sendedCount + 1)
