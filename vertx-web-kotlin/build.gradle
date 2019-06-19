@@ -58,6 +58,8 @@ dependencies {
     compile "com.hazelcast:hazelcast:3.8.2"
     compile "io.vertx:vertx-mongo-client:$vertx_version"
     compile "io.vertx:vertx-lang-kotlin:$vertx_version"
+    compile "io.vertx:vertx-jdbc-client:$vertx_version"
+
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-runtime:$kotlin_version"
@@ -78,10 +80,12 @@ dependencies {
     compile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 
-
     // 获取文件名后缀工具包
     // https://mvnrepository.com/artifact/org.apache.tika/tika-core
     compile group: 'org.apache.tika', name: 'tika-core', version: '1.21'
+
+
+    compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.16'
 
 }
 
