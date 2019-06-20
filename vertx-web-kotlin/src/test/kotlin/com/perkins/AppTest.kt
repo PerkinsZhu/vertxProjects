@@ -631,4 +631,8 @@ class AppTest {
         println(URLDecoder.decode("bb%20aa ", "UTF-8"))
     }
 
+    @Test
+    fun testReCallCommit(){
+
+    }
 }
