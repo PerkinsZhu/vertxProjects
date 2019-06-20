@@ -22,6 +22,8 @@ import org.apache.tika.mime.MimeTypesReader
 import software.amazon.awssdk.utils.Md5Utils
 import sun.security.provider.MD5
 import java.io.*
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
@@ -357,7 +359,7 @@ class AppTest {
     fun testMulitUploadFileWithJava2() {
         val (bucketName, service) = getS3Server()
 
-        val list= mutableListOf<String>()
+        val list = mutableListOf<String>()
         list.add("D:\\zhupingjing\\testFile\\Unicode编码表.png")
         list.add("D:\\zhupingjing\\testFile\\sokit-1-3-win32-chs.zip")
 
@@ -373,8 +375,9 @@ class AppTest {
     fun testGetMetaData() {
         val (bucketName, service) = getS3Server()
         val list = mutableListOf<String>()
-        list.add("sokit-1-3-win32-chs.zip")
-        list.add("Unicode编码表.png")
+//        list.add("sokit-1-3-win32-chs.zip")
+//        list.add("Unicode编码表.png")
+        list.add("5d0a20f69cefee13dca1d736-littleim+test-s3.png")
         list.forEach {
             val data = service.getObject(bucketName, it)
             data?.objectMetadata?.userMetadata?.forEach {
@@ -410,9 +413,6 @@ class AppTest {
             }
         }
     }
-
-
-
 
 
     @Test
@@ -607,9 +607,28 @@ class AppTest {
     }
 
     @Test
-    fun testReplaceBlank(){
+    fun testReplaceBlank() {
         val str = "aaa bbb     ccccc"
-        println(str.replace(" ",""))
+        println(str.replace(" ", ""))
+    }
+
+    @Test
+    fun testWhen() {
+        val str = "11"
+        val result = when (str) {
+            "aa" -> "aaaaaa"
+            "bb" -> "bbbbb"
+            else -> "else"
+        }
+        println(result)
+    }
+
+
+    @Test
+    fun testURLEncode(){
+        val fileName = " "
+        println(URLEncoder.encode(fileName, "UTF-8"))
+        println(URLDecoder.decode("bb%20aa ", "UTF-8"))
     }
 
 }
