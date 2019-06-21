@@ -1,0 +1,2 @@
+1、支持JWT 的keystore.jceks 生成命令是：
+        keytool -genseckey -keystore keystore.jceks -storetype jceks -storepass secret -keyalg HMacSHA256 -keysize 2048 -alias HS256 -keypass secret

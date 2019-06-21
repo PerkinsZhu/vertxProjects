@@ -6,6 +6,7 @@ import io.vertx.core.json.JsonObject
 import io.vertx.ext.auth.jwt.JWTAuth
 import io.vertx.ext.auth.jwt.JWTOptions
 import io.vertx.ext.web.RoutingContext
+import java.time.LocalDateTime
 
 object BaseHandle : AbstractHandle() {
     val indexHandle = Handler<RoutingContext> {
@@ -98,9 +99,14 @@ object BaseHandle : AbstractHandle() {
 
     fun login(authProvider: JWTAuth) = Handler<RoutingContext> {
         val Permissions = listOf("admin:all", "manager;lever2")
-        val info = JsonObject().put("userId", "123456").put("userName", "jack")
-        it.response().end(authProvider.generateToken(info))
+        // 校验用户名和密码，校验通过之后生成token，用户信息存储session
+        // 客户端取得token直接，
+        // 设置  Authorization --> Bearer token串
 
+        //可以向token中设置一些必要的信息
+        val info = JsonObject().put("userId", "123456").put("userName", "jack").put("loginTime", LocalDateTime.now())
+        it.response().end(authProvider.generateToken(info))
+        //TODO 如何设置权限？
     }
 
     val getUser = Handler<RoutingContext> {

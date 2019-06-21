@@ -10,6 +10,7 @@ import io.vertx.ext.web.handler.CookieHandler
 import io.vertx.ext.web.handler.SessionHandler
 import io.vertx.ext.web.sstore.LocalSessionStore
 import io.vertx.core.json.JsonObject
+import io.vertx.ext.auth.KeyStoreOptions
 import io.vertx.ext.auth.jwt.JWTAuth
 import io.vertx.ext.auth.jwt.JWTAuthOptions
 import io.vertx.ext.auth.jwt.impl.JWTAuthProviderImpl
@@ -38,14 +39,10 @@ class CommonVerticle : AbstractVerticle() {
         val sessionStore = LocalSessionStore.create(vertx, "sessionName")
 
 
-        val config = JsonObject().put("keyStore", JsonObject()
-                .put("path", "keystore.jceks")
-                .put("type", "jceks")
-                .put("password", "secret"))
-        val options = JWTAuthOptions()
-        val provider = JWTAuth.create(vertx, options)
-        val jwtAuth = JWTAuthProviderImpl(vertx, options)
-        val jwtHandler: Handler<RoutingContext> = JWTAuthHandler.create(jwtAuth)
+        val option = JWTAuthOptions()
+        option.keyStore = KeyStoreOptions().setPassword("secret").setPath("keystore.jceks").setType("jceks")
+        val provider = JWTAuthProviderImpl(vertx, option)
+        val jwtHandler: Handler<RoutingContext> = JWTAuthHandler.create(provider)
 
 
 
@@ -66,7 +63,7 @@ class CommonVerticle : AbstractVerticle() {
 
         //测试JWT 实现
         route("/jwt/*").handler(jwtHandler)
-        get("/login").handler(BaseHandle.login(jwtAuth))
+        get("/login").handler(BaseHandle.login(provider))
         get("/jwt/getUser").handler(BaseHandle.getUser)
 
     }

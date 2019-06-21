@@ -54,6 +54,8 @@ dependencies {
     compile "io.vertx:vertx-reactive-streams:$vertx_version"
     compile "io.vertx:vertx-auth-common:$vertx_version"
     compile "io.vertx:vertx-auth-jwt:$vertx_version"
+    compile "io.vertx:vertx-auth-mongo:$vertx_version"
+
     compile "io.vertx:vertx-hazelcast:$vertx_version"
     compile "com.hazelcast:hazelcast:3.8.2"
     compile "io.vertx:vertx-mongo-client:$vertx_version"
