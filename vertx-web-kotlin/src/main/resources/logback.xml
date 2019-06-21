@@ -37,7 +37,7 @@
         <appender-ref ref="STDOUT"/>
     </root>
     <!-- 业务代码日志配置，可以为不同的包制定不同的日志输出级别 -->
-    <logger name="io.vts.im" level="DEBUG" additivity="false">
+    <logger name="com.perkins" level="DEBUG" additivity="false">
         <!--<appender-ref ref="FILE"/>-->
         <appender-ref ref="STDOUT"/>
     </logger>

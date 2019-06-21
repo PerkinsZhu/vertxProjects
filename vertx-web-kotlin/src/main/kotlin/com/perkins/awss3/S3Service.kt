@@ -100,12 +100,33 @@ class S3Service constructor(val accessKey: String, val secretKey: String, val en
                 metadata.userMetadata = it
                 putObjectRequest.withMetadata(metadata)
             }
+
+            // 添加对象时设置tagging会导致错误
+            /* val tagSet = mutableListOf<Tag>()
+             tagSet.add(Tag("PROJECT","APP-SERVER"))
+             tagSet.add(Tag("USER","TEST"))
+             val target =ObjectTagging(tagSet)
+             putObjectRequest.withTagging(target)*/
+
             amazonS3.putObject(putObjectRequest)
         } catch (e: Exception) {
             logger.error("upload file[$key] to S3 fail!", e)
             null
         }
     }
+
+    // 设置对象的tagging
+    fun setObjectTagging(bucketName: String, key: String, tagList: List<Tag>): SetObjectTaggingResult {
+        val tagging = ObjectTagging(tagList)
+        val request = SetObjectTaggingRequest(bucketName, key, tagging)
+        return amazonS3.setObjectTagging(request)
+    }
+
+    fun getObjectTagging(bucketName: String, key: String): GetObjectTaggingResult {
+        val request = GetObjectTaggingRequest(bucketName, key)
+        return amazonS3.getObjectTagging(request)
+    }
+
 
     /**
      * 删除object

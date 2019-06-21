@@ -1,6 +1,7 @@
 package com.perkins
 
 import com.amazonaws.services.s3.model.PartETag
+import com.amazonaws.services.s3.model.Tag
 import com.perkins.awss3.S3Service
 import com.perkins.common.PropertiesUtil
 import com.perkins.util.Base64Utils
@@ -19,6 +20,7 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.codec.digest.Md5Crypt
 import org.apache.tika.mime.MimeTypes
 import org.apache.tika.mime.MimeTypesReader
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.utils.Md5Utils
 import sun.security.provider.MD5
 import java.io.*
@@ -33,6 +35,7 @@ import java.util.concurrent.TimeUnit
 
 
 class AppTest {
+    val logger = LoggerFactory.getLogger(this.javaClass)
     val vertx = Vertx.vertx()
     val fs = vertx.fileSystem()
     @Test
@@ -331,9 +334,11 @@ class AppTest {
     @Test
     fun testAddObjectToS3() {
         val (bucketName, service) = getS3Server()
-        val result = service.addObject(bucketName, "dir1/dir2/file.png", "D:\\zhupingjing\\testFile\\Unicode编码表.png")
+        val result = service.addObject(bucketName, "testTag0201.png", "D:\\zhupingjing\\testFile\\Unicode编码表.png")
         if (result == null) {
             println("上传失败")
+        } else {
+            println(result.eTag)
         }
     }
 
@@ -372,19 +377,37 @@ class AppTest {
     }
 
     @Test
+    fun testSetTagging() {
+        val (bucketName, service) = getS3Server()
+        val tagList = ArrayList<Tag>()
+        tagList.add(Tag("PROJECT", "app-server"))
+        tagList.add(Tag("USER", "root"))
+        val key = "testTag0201.png"
+        val result = service.setObjectTagging(bucketName, key, tagList)
+        println(result)
+        println(result.versionId)
+        val tagResult = service.getObjectTagging(bucketName, key)
+        tagResult.tagSet.forEach {
+            println(it.key+"-->"+it.value)
+        }
+    }
+
+
+    @Test
     fun testGetMetaData() {
         val (bucketName, service) = getS3Server()
         val list = mutableListOf<String>()
 //        list.add("sokit-1-3-win32-chs.zip")
 //        list.add("Unicode编码表.png")
-        list.add("5d0a20f69cefee13dca1d736-littleim+test-s3.png")
+        list.add("testTag02.png")
         list.forEach {
             val data = service.getObject(bucketName, it)
             data?.objectMetadata?.userMetadata?.forEach {
-                S3Service.logger.info("upload -->  ${it.key}--->${it.value}")
+                logger.info("upload -->  ${it.key}--->${it.value}")
             }
+            println(data?.objectMetadata?.eTag)
+            println(data?.taggingCount)
         }
-
     }
 
 
@@ -625,14 +648,14 @@ class AppTest {
 
 
     @Test
-    fun testURLEncode(){
+    fun testURLEncode() {
         val fileName = " "
         println(URLEncoder.encode(fileName, "UTF-8"))
         println(URLDecoder.decode("bb%20aa ", "UTF-8"))
     }
 
     @Test
-    fun testReCallCommit(){
+    fun testReCallCommit() {
         //02
     }
 }
