@@ -82,7 +82,7 @@ class AppTest {
     fun testRXJava() {
         val vertx = Vertx.vertx()
         val fileSystem = vertx.fileSystem()
-        fileSystem.open("uploads/data.txt", OpenOptions()) { result ->
+            fileSystem.open("uploads/data.txt", OpenOptions()) { result ->
             println("--handle--")
             val file = result.result()
             val observable = RxHelper.toObservable(file)
