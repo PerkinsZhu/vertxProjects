@@ -656,6 +656,9 @@ class AppTest {
 
     @Test
     fun testReCallCommit() {
-        //02
+    val set =mutableSetOf<String>()
+        set.add("12312")
+        println(set)
     }
+
 }

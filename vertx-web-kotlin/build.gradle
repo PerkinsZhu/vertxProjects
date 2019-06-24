@@ -63,6 +63,7 @@ dependencies {
     compile "io.vertx:vertx-mongo-client:$vertx_version"
     compile "io.vertx:vertx-lang-kotlin:$vertx_version"
     compile "io.vertx:vertx-jdbc-client:$vertx_version"
+    compile "io.vertx:vertx-mysql-postgresql-client:$vertx_version"
 
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"

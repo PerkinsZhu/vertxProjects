@@ -1,6 +1,6 @@
 package com.perkins
 
-import com.perkins.mysql.MySqlAPP
+import com.perkins.mysql.JDBCAPP
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
 import org.slf4j.LoggerFactory
@@ -13,7 +13,7 @@ abstract class BaseApp {
             if (it.succeeded()) {
                 action(it.result())
             } else {
-                MySqlAPP.logger.error(msg, it.cause())
+                JDBCAPP.logger.error(msg, it.cause())
             }
         }
     }
