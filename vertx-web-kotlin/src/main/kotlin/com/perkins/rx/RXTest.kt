@@ -3,20 +3,26 @@ package com.perkins.rx
 import org.junit.After
 import org.junit.Test
 import rx.Observable
-import rx.Scheduler
+import rx.Observer
 import rx.Single
+import rx.Subscriber
 import rx.schedulers.Schedulers
-import scala.concurrent.Future
-import java.lang.RuntimeException
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
+
 import java.util.concurrent.TimeUnit
+import rx.functions.Action0
+import rx.functions.Action1
+
 
 class RXTest {
 
     @After
-    fun sleep() {
-        Thread.sleep(5000)
+    fun after() {
+        Thread.sleep(15000)
+    }
+
+    fun sleep(i: Long? = null) {
+        val b = i ?: 5000L
+        Thread.sleep(b)
     }
 
     @Test
@@ -195,5 +201,226 @@ class RXTest {
         println("add")
         return a + b
     }
+
+    @Test
+    fun testConcat() {
+        val list = (1..10).map {
+            Single.just(it).toObservable()
+        }
+
+        list.reduce { a, b ->
+            val temp = Observable.concat(a, b)
+            temp
+        }.subscribe({
+            println(it)
+        }, {
+            it.printStackTrace()
+        })
+
+        val init = Observable.just(mutableListOf<Int>())
+        list.fold(init) { a, b ->
+            Observable.zip(a, b) { aa, bb ->
+                aa.add(bb)
+                aa
+            }
+        }.subscribe({
+            println(it)
+        }, {
+            it.printStackTrace()
+        })
+
+
+        /*Single.concat(Single.just(add(1, 2)), Single.just("jack"), Single.just(mutableListOf<String>()))
+                .toList()// 这里会把concat的所有元素合并到list中一次性返回，如果不toList，则会调用三次subscribe函数体
+                .subscribe({
+                    println(it)
+                }, {
+
+                })*/
+    }
+
+    @Test
+    fun testObserverThread() {
+        printThreadName("main -- start ")
+        val obj = Observable.just(1).map {
+            printThreadName("$it --- a -- start")
+            sleep(2000)
+            printThreadName("$it --- a -- end")
+            it * 10
+        }
+                .observeOn(Schedulers.newThread())
+                .subscribeOn(Schedulers.newThread())
+                .map {
+                    printThreadName("$it --- b -- start")
+                    sleep(2000)
+                    printThreadName("$it --- b -- end")
+                    it * 10
+                }
+                .flatMap {
+                    Observable.just(it).map {
+                        printThreadName("$it --- c -- start")
+                        sleep(2000)
+                        printThreadName("$it --- c -- end")
+                        it * 10
+                    }
+                }.flatMap {
+                    end(Observable.just(it).map {
+                        printThreadName("$it --- cc -- start")
+                        sleep(2000)
+                        printThreadName("$it --- cc -- end")
+                        it * 10
+                    })
+                    Observable.just(it).map {
+                        printThreadName("$it --- ccc -- start")
+                        sleep(2000)
+                        printThreadName("$it --- ccc -- end")
+                        it * 10
+                    }
+                }.map {
+                    printThreadName("$it --- d -- start")
+                    sleep(2000)
+                    printThreadName("$it --- d -- end")
+                    it * 10
+                }
+        printThreadName("main -- end ")
+
+        end(obj)
+
+        /**
+         * 实验结论：
+         *      observer 不会阻塞主线程，但是同一个observer上的多个map或者flatmap是阻塞的
+         *      即使设置为不同的线程运行也是阻塞的
+         */
+
+    }
+
+    fun <T> end(obj: Observable<T>) {
+        obj.subscribe({
+            println(it)
+        }, {
+            it.printStackTrace()
+        })
+    }
+
+
+    fun printThreadName(name: String) = println("$name-->" + Thread.currentThread().name)
+
+    @Test
+    fun testMerge() {
+        val a = Observable.just(1, 2, 3, 4)
+        val b = Observable.just(5, 6, 7, 8)
+        Observable.merge(a, b).subscribe({
+            println(it)
+        }, {
+
+        })
+
+        a.mergeWith(b).subscribe({
+            println("---" + it)
+        }, {})
+        //TODO map代码块如何并行？
+
+        //TODO JOIN
+        /*   a.join(b) { c, d ->
+
+           }*/
+
+    }
+
+    @Test
+    fun testRxJava2() {
+        val observable = Observable.just("hello")
+        Observable.from((1..10))
+        Observable.from((1..10).toList().toTypedArray()).map {
+            println(it)
+            it
+        }.subscribe()
+        observable.skip(10).take(2).map { s -> println(s) }.doOnCompleted {}
+
+
+        val temp = observable.subscribe()
+
+        val observable2 = Observable.create(object : Observable.OnSubscribe<String> {
+            override fun call(subscriber: Subscriber<in String>) {
+                subscriber.onNext("Hello")
+                subscriber.onNext("Hi")
+//                subscriber.onError(RuntimeException("my error"))
+                subscriber.onNext("Aloha")
+                subscriber.onCompleted()
+                subscriber.onNext("Aloha22")
+                subscriber.onNext(456.toString())
+                subscriber.onCompleted()
+                subscriber.onError(RuntimeException("my error 22"))
+
+            }
+        })
+        observable2.map {
+            println(it)
+            it
+        }.subscribe({
+            println("end ---$it")
+        }, {
+            it.printStackTrace()
+        })
+
+
+    }
+
+    @Test
+    fun testCreate() {
+        Observable.create(Observable.OnSubscribe<Int> { observer ->
+            try {
+                if (!observer.isUnsubscribed) {
+                    for (i in 1..4) {
+                        observer.onNext(i)
+                    }
+                    observer.onCompleted()
+                }
+            } catch (e: Exception) {
+                observer.onError(e)
+            }
+        }).subscribe(object : Subscriber<Int>() {
+            override fun onNext(item: Int?) {
+                println("Next: " + item!!)
+            }
+
+            override fun onError(error: Throwable) {
+                System.err.println("Error: " + error.message)
+            }
+
+            override fun onCompleted() {
+                println("Sequence complete.")
+            }
+        })
+
+//        test from
+
+        val items = arrayOf(0, 1, 2, 3, 4, 5)
+        val myObservable = Observable.from(items)
+
+        myObservable.subscribe(
+                { item -> println(item) },
+                { error -> println("Error encountered: " + error.message) },
+                { println("Sequence complete") }
+        )
+
+
+    }
+
+    @Test
+    fun tesetInterface() {
+        println(object : OnBind {
+            override fun onBindChildViewData(holder: String, itemData: Any, position: Int) {
+                println(holder + itemData + position)
+            }
+        })
+    }
+
+
+}
+
+interface OnBind {
+
+    fun onBindChildViewData(holder: String, itemData: Any, position: Int)
 
 }

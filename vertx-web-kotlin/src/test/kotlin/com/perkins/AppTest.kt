@@ -3,6 +3,7 @@ package com.perkins
 import com.amazonaws.services.s3.model.PartETag
 import com.amazonaws.services.s3.model.Tag
 import com.perkins.awss3.S3Service
+import com.perkins.bean.Person
 import com.perkins.common.PropertiesUtil
 import com.perkins.util.Base64Utils
 import org.junit.Test
@@ -82,7 +83,7 @@ class AppTest {
     fun testRXJava() {
         val vertx = Vertx.vertx()
         val fileSystem = vertx.fileSystem()
-            fileSystem.open("uploads/data.txt", OpenOptions()) { result ->
+        fileSystem.open("uploads/data.txt", OpenOptions()) { result ->
             println("--handle--")
             val file = result.result()
             val observable = RxHelper.toObservable(file)
@@ -388,7 +389,7 @@ class AppTest {
         println(result.versionId)
         val tagResult = service.getObjectTagging(bucketName, key)
         tagResult.tagSet.forEach {
-            println(it.key+"-->"+it.value)
+            println(it.key + "-->" + it.value)
         }
     }
 
@@ -656,9 +657,31 @@ class AppTest {
 
     @Test
     fun testReCallCommit() {
-    val set =mutableSetOf<String>()
+        val set = mutableSetOf<String>()
         set.add("12312")
         println(set)
+    }
+
+    @Test
+    fun testSplit() {
+        val s1 = "1,2,3".split(",".toRegex()).toSet()
+        val s2 = mutableSetOf("2", "3", "4")
+        println(s1.subtract(s2))
+        println(s1.union(s2))
+        println(s1.minus(s2))
+
+        println(",,asdfasdf,,".trim(','))
+
+    }
+
+    @Test
+    fun testConstruct() {
+        val a = Person()
+        val b = Person("jack", 12)
+        println(a)
+        println(b)
+        println(b)
+
     }
 
 }
