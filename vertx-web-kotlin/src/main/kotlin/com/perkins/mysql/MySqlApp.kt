@@ -2,12 +2,14 @@ package com.perkins.mysql
 
 import com.perkins.BaseApp
 import io.vertx.core.json.JsonObject
+import io.vertx.kotlin.core.json.JsonArray
 import io.vertx.rxjava.core.Vertx
 import io.vertx.rxjava.ext.asyncsql.AsyncSQLClient
 import io.vertx.rxjava.ext.asyncsql.MySQLClient
 import org.junit.After
 import org.junit.Test
 import rx.Observable
+import rx.Single
 
 
 class MySqlApp : BaseApp() {
@@ -67,7 +69,7 @@ class MySqlApp : BaseApp() {
 
     @After
     fun testEnd() {
-        Thread.sleep(10000)
+        Thread.sleep(5000)
     }
 
 
@@ -111,12 +113,78 @@ class MySqlApp : BaseApp() {
                     .map { rs ->
                         val data = rs.toJson()
                         data
-            }
+                    }
         }.subscribe({
             println(it)
-        },{
+        }, {
             it.printStackTrace()
         })
     }
 
+    @Test
+    fun testParam() {
+        val sql = "SELECT id FROM user WHERE account_id =? AND realname =?"
+        val params = JsonArray()
+        params.add("test01")
+        params.add("test01")
+        execute {
+            //            it.rxQuery(sql)
+            it.rxQueryWithParams(sql, params)
+        }.map {
+            it.rows.forEach {
+                println(it)
+            }
+        }.subscribe()
+    }
+
+    @Test
+    fun testInsertNull() {
+        var uuidStr = "_userasdlkfjwifndfogvhddlfgjk"
+        val sql = "INSERT INTO `user` (`uuid`, `account`, `account_id`, `realname`, `platform`, `locked`, `ismasking`,`isoutsource`, `isimport`, `created_at`, `created_by`)" +
+                "\tVALUES (?,?,?,?,?,?,?,?,?,?,?)"
+        logger.debug("addDefaultUserSQL:$sql")
+        val params = JsonArray().add(uuidStr).add("accountId").add("accountId").add("realname").add(16).add(0).add(0)
+                .add(0).add(1).add(System.currentTimeMillis()).add(1)
+
+        execute {
+            it.rxUpdateWithParams(sql, params)
+        }.map {
+            it.keys.forEach {
+                println(it)
+            }
+        }.subscribe({
+
+        }, {
+            it.printStackTrace()
+        })
+    }
+
+
+    @Test
+    fun testInsertNull2() {
+        var uuidStr = "_userasdlkfjwifndfogvhddlfgjk"
+        val sql = "INSERT INTO `user` (`uuid`, `account`, `account_id`, `realname`, `platform`, `locked`, `ismasking`,`isoutsource`, `isimport`, `created_at`, `created_by`,`updated_by`)" +
+                "\tVALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+        logger.debug("addDefaultUserSQL:$sql")
+        val params = JsonArray().add(uuidStr).add("accountId").add("accountId").add("realname").add(16).add(0).add(0)
+                .add(0).add(1).add(System.currentTimeMillis()).add(1).addNull()
+
+        execute {
+            it.rxUpdateWithParams(sql, params)
+        }.map {
+            it.keys.forEach {
+                println(it)
+            }
+        }.subscribe({
+
+        }, {
+            it.printStackTrace()
+        })
+    }
+
+    private fun <T> execute(sqlStatement: (io.vertx.rxjava.ext.sql.SQLConnection) -> Single<T>): Single<T> {
+        return getClient().rxGetConnection().flatMap {
+            sqlStatement(it).doAfterTerminate(it::close)
+        }
+    }
 }

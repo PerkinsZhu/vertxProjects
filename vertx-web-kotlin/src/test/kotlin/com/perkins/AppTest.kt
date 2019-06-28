@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.model.PartETag
 import com.amazonaws.services.s3.model.Tag
 import com.perkins.awss3.S3Service
 import com.perkins.bean.Person
+import com.perkins.bean.User
 import com.perkins.common.PropertiesUtil
 import com.perkins.util.Base64Utils
 import org.junit.Test
@@ -15,6 +16,7 @@ import java.nio.ByteBuffer
 import jdk.nashorn.internal.objects.NativeArray.forEach
 import io.vertx.core.file.AsyncFile
 import io.vertx.core.file.OpenOptions
+import io.vertx.kotlin.core.json.JsonObject
 import io.vertx.kotlin.core.streams.write
 import io.vertx.rx.java.RxHelper
 import org.apache.commons.codec.digest.DigestUtils
@@ -29,10 +31,14 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 
 class AppTest {
@@ -682,6 +688,77 @@ class AppTest {
         println(b)
         println(b)
 
+        val json = JsonObject()
+        println(json.getString("a"))
+
+        println("asdfldijwehn232".replace(".".toRegex(), "*"))
     }
 
+    @Test
+    fun testShortMd5() {
+        println(shortMD5("456sdfasdfasd74wef1asdf"))
+        val str = UUID.randomUUID().toString().replace("-".toRegex(), "")
+        println(str)
+        println(str.substring(5, 29))
+    }
+
+    @Test
+    fun testFold() {
+        val list = (1..3).toList()
+        print(list)
+
+        val init = mutableListOf<Int>()
+        val result = list.fold(init) { a, b ->
+            a.add(b)
+            a
+        }
+
+        println(result.size)
+
+    }
+
+
+    fun shortMD5(sourceStr: String): String {
+        var result = ""
+        try {
+            //初始化MessageDigest信息摘要对象,并指定为MD5不分大小写都可以
+            val md = MessageDigest.getInstance("MD5")
+            md.update(sourceStr.toByteArray())
+            //计算信息摘要digest()方法,返回值为字节数组
+            val b = md.digest()
+
+            var i: Int
+            val buf = StringBuffer("")
+            for (offset in b.indices) {
+                //将首个元素赋值给i
+                i = b[offset].toInt()
+                if (i < 0) {
+                    i += 256
+                }
+                if (i < 16) {
+                    //前面补0
+                    buf.append("0")
+                }
+                //转换成16进制编码
+                buf.append(Integer.toHexString(i))
+            }
+            result = buf.toString().substring(8, 24)
+        } catch (e: NoSuchAlgorithmException) {
+            logger.error("get shortMD5 error ", e)
+        }
+
+        return result
+    }
+
+    @Test
+    fun testMap() {
+        val user = User("jack", 20)
+        val user2 = User("jack", 20)
+        val map = mutableMapOf<User, Int>()
+        map.put(user, 1)
+        println(map.get(user2))
+        println(map.get(user))
+
+
+    }
 }

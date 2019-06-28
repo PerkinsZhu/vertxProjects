@@ -1,5 +1,6 @@
 package com.perkins.rx
 
+import io.vertx.core.json.JsonObject
 import org.junit.After
 import org.junit.Test
 import rx.Observable
@@ -11,6 +12,7 @@ import rx.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 import rx.functions.Action0
 import rx.functions.Action1
+import java.util.concurrent.atomic.AtomicInteger
 
 
 class RXTest {
@@ -415,6 +417,87 @@ class RXTest {
             }
         })
     }
+
+
+    @Test
+    fun testZip() {
+        /*Single.zip(Single.just(1), Single.just(3)) { a, b ->
+            println("$a--$b")
+            a + b
+        }.subscribe({
+            print("zip -->$it")
+        }, {
+
+        })*/
+
+        val temp = (1..3).toList().map {
+            Single.just(it)
+        }
+        val init = Observable.just(mutableListOf<Int>())
+        val ddd = temp.fold(init) { list, single ->
+            Observable.zip(list, single.toObservable()) { a, b ->
+                println("zip--${a.size}--$b")
+                a.add(b)
+                a
+            }
+        }
+        ddd.map {
+            println(it.size)
+        }.subscribe({
+
+        }, {
+            it.printStackTrace()
+        })
+
+
+    }
+
+
+    @Test
+    fun testZip2() {
+        val a = AtomicInteger(0)
+        val data = Single.just((1..10).toList()).map {
+            Thread.sleep(1000)
+            a.getAndIncrement()
+            it.map { it * 10 }
+        }.map {
+            val tipData = JsonObject().put("a", a.get())
+            Pair(tipData, it)
+        }
+
+        val tipData = JsonObject().put("a", a.get())
+        val result = Single.zip(Single.just(tipData), data) { a, b ->
+            println(a)
+            Pair(a, b)
+        }
+
+        result.map {
+            println(it.first)
+            println(it.second.first)
+            println(it.second.second)
+        }.subscribe()
+
+
+    }
+
+    @Test
+    fun testOnError() {
+        Single.just(0).map {
+            100 / it
+        }.onErrorReturn {
+            println("----onerror----")
+            it.printStackTrace()
+            1000
+        }.subscribe({
+            println(it)
+        }, {
+            println("--sub---")
+            it.printStackTrace()
+        })
+
+    }
+
+
 
 
 }
