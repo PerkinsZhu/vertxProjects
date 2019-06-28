@@ -25,6 +25,24 @@ class ClusterVerticle constructor(val port: Int) : AbstractVerticle() {
                     }
                 }
 
+        val eb = vertx.eventBus()
+
+        // 测试集群之间发送消息，取消注释即可
+        /*eb.consumer<String>("test.message") {
+            println(it.body())
+            it.reply("receive ${it.body()}")
+        }*/
+
+
+
+        eb.send<String>("test.message", "hello i am server") {
+            if (it.succeeded()) {
+                println("成功---${it.result()}")
+            } else {
+                println("失败")
+            }
+        }
+
     }
 
     private fun createRouter() = Router.router(vertx).apply {
@@ -33,6 +51,16 @@ class ClusterVerticle constructor(val port: Int) : AbstractVerticle() {
          }*/
 
         route("/name").handler {
+
+            val eb = vertx.eventBus()
+            eb.send<String>("test.message", "hello i am server") {
+                if (it.succeeded()) {
+                    println("成功---${it.result()}")
+                } else {
+                    println("失败")
+                }
+            }
+
             it.response().end("ClusterVerticle")
         }
         route("/name/clu").handler {
