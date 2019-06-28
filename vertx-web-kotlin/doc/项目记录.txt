@@ -1,2 +1,7 @@
 1、支持JWT 的keystore.jceks 生成命令是：
         keytool -genseckey -keystore keystore.jceks -storetype jceks -storepass secret -keyalg HMacSHA256 -keysize 2048 -alias HS256 -keypass secret
+
+
+
+2、cmd 编译命令：
+        myProjects\vertxProjects\vertx-web-kotlin>gradle build --stacktrace

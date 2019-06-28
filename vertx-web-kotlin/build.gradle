@@ -25,8 +25,11 @@ plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.3.10'
     id "com.github.ManifestClasspath" version "0.1.0-RELEASE"
+    id "org.jetbrains.kotlin.kapt" version "1.3.40"
 }
 apply plugin: "io.spring.dependency-management"
+apply plugin: 'idea'
+apply plugin: 'kotlin-kapt'
 
 group 'com.perkins'
 version '1.0-SNAPSHOT'
@@ -65,10 +68,22 @@ dependencies {
     compile "io.vertx:vertx-jdbc-client:$vertx_version"
     compile "io.vertx:vertx-mysql-postgresql-client:$vertx_version"
     compile "io.vertx:vertx-service-discovery:$vertx_version"
+    compile "io.vertx:vertx-service-discovery-bridge-consul:$vertx_version"
+    compile "io.vertx:vertx-service-discovery-bridge-kubernetes:$vertx_version"
+    compile "io.vertx:vertx-codegen:$vertx_version"
+    kapt "io.vertx:vertx-codegen:$vertx_version:processor"
+    compile "io.vertx:vertx-service-proxy:$vertx_version"
+    compile "io.vertx:vertx-service-proxy:$vertx_version:processor"
+
+
+
+
+
 
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-runtime:$kotlin_version"
+
 
 //    compile 'software.amazon.awssdk:kinesis'
     compile "software.amazon.awssdk:aws-sdk-java:2.5.54"
@@ -96,6 +111,7 @@ dependencies {
     // 整合spring
     compile "org.springframework:spring-core:$springVersion"
     compile "org.springframework:spring-context:$springVersion"
+
 
 }
 
@@ -129,3 +145,29 @@ run {
  停止服务: vertx stop  34133243-5dfa-4ace-9221-02decee7a3ca-redeploy（run时候自动生成的ID）
 
  */
+
+task annotationProcessing(type: JavaCompile, group: 'build') { // codegen
+    source = sourceSets.main.java
+    classpath = configurations.compile + configurations.compileOnly
+    destinationDir = project.file('src/main/generated')
+    options.compilerArgs = [
+            "-proc:only",
+            "-processor", "io.vertx.codegen.CodeGenProcessor",
+            "-Acodegen.output=${project.projectDir}/src/main"
+    ]
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += 'src/main/generated'
+        }
+    }
+}
+
+
+idea {
+    module {
+        sourceDirs += file('build/generated/source/kapt/main')
+    }
+}
