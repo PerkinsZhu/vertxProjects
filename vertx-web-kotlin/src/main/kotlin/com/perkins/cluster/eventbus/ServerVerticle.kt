@@ -11,5 +11,11 @@ class ServerVerticle : AbstractVerticle() {
             println("server --> ${it.body()}")
             it.reply(" msg ok ---> ${it.body()}")
         }
+
+        eb.send<String>("test.message", " init test") {
+            if (it.succeeded()) {
+                println(it.result())
+            }
+        }
     }
 }
