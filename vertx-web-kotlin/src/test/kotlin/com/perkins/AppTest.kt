@@ -16,6 +16,7 @@ import java.nio.ByteBuffer
 import jdk.nashorn.internal.objects.NativeArray.forEach
 import io.vertx.core.file.AsyncFile
 import io.vertx.core.file.OpenOptions
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.kotlin.core.json.JsonObject
 import io.vertx.kotlin.core.streams.write
 import io.vertx.rx.java.RxHelper
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory
 import software.amazon.awssdk.utils.Md5Utils
 import sun.security.provider.MD5
 import java.io.*
+import java.net.InetAddress
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.file.Files
@@ -759,6 +761,30 @@ class AppTest {
         println(map.get(user2))
         println(map.get(user))
 
+        val aa = when(2){
+            2 -> 23
+            else -> 234
+        }
+        println(aa)
 
     }
+
+    @Test
+    fun testJson(){
+        val json = JsonObject().put("a","a")
+        val b = JsonObject().put("b","b")
+        println(json.mergeIn(b))
+        println(json)
+
+    }
+
+    @Test
+    fun testGethost(){
+        val httpServerOptions = HttpServerOptions()
+        println(httpServerOptions.host)
+
+        println(InetAddress.getLocalHost().hostAddress)
+
+    }
+
 }
