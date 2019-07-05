@@ -1,9 +1,7 @@
 package com.perkins.util;
 
 
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
-
+import java.util.Base64;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -22,16 +20,17 @@ public class Base64Utils {
      * byte数组 转换为 Base64字符串
      */
     public static String encode(byte[] data) {
-        return new BASE64Encoder().encode(data);
+        return String.valueOf(Base64.getEncoder().encode(data));
     }
 
     /**
      * Base64字符串 转换为 byte数组
      */
     public static byte[] decode(String base64) {
+
         try {
-            return new BASE64Decoder().decodeBuffer(base64);
-        } catch (IOException e) {
+            return Base64.getDecoder().decode(base64);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return new byte[0];
