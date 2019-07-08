@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "UserImportMode",
+  "description": "some test",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "enum": [
+        "123456"
+      ]
+    },
+    "data": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "massName",
+          "massId",
+          "accountId",
+          "realName"
+        ],
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "realName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "massId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "massName": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "key",
+    "data"
+  ]
+}

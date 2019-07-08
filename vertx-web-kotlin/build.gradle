@@ -120,6 +120,9 @@ dependencies {
 
     // https://mvnrepository.com/artifact/io.vavr/vavr
     compile group: 'io.vavr', name: 'vavr', version: '0.10.0'
+
+    // json 校验
+    compile "org.everit.json:org.everit.json.schema:1.5.1"
 }
 
 dependencyManagement {
