@@ -48,6 +48,9 @@ dependencies {
     compile "io.vertx:vertx-core-scala_2.12:$vertx_version"
     compile "io.vertx:vertx-web-scala_2.12:$vertx_version"
 
+    // https://mvnrepository.com/artifact/org.scalatest/scalatest
+    testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.2.0-SNAP10'
+
 }
 sourceSets {
     main {

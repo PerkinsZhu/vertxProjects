@@ -9,7 +9,10 @@ import io.vertx.rxjava.ext.asyncsql.MySQLClient
 import org.junit.After
 import org.junit.Test
 import rx.Observable
+import rx.Observer
 import rx.Single
+import java.sql.Connection
+import java.sql.DriverManager
 
 
 class MySqlApp : BaseApp() {
@@ -186,5 +189,31 @@ class MySqlApp : BaseApp() {
         return getClient().rxGetConnection().flatMap {
             sqlStatement(it).doAfterTerminate(it::close)
         }
+    }
+
+
+    @Test
+    fun testTrancation() {
+        val connection = getJDBCCollecion()
+        Single.just(connection).map {
+            it.prepareStatement("update user set name = 'jack' where id = 1").executeUpdate()
+            it
+        }.map {
+            it.prepareStatement("update user set name = 'jack' where id = 1").executeUpdate()
+            it
+        }.map {
+            it.prepareStatement("update user set name = 'jack' where id = 1").executeUpdate()
+            it
+        }.subscribe({
+            connection.commit()
+        }, {
+            connection.rollback()
+        })
+    }
+
+
+    fun getJDBCCollecion(): Connection {
+        Class.forName("com.mysql.cj.jdbc.Driver")
+        return DriverManager.getConnection("jdbc:mysql://localhost:3308/test")
     }
 }
