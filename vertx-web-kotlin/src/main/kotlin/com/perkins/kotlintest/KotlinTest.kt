@@ -1,6 +1,7 @@
 package com.perkins.kotlintest
 
 import com.perkins.bean.User
+import io.vertx.core.json.JsonObject
 import org.junit.Test
 
 
@@ -48,4 +49,33 @@ class KotlinTest {
         println(mood)  // I am sad
     }
 
+
+    @Test
+    fun testAdd() {
+        var a = 0;
+        (1 until 10).toList().forEach {
+            println(++a)
+        }
+    }
+
+    @Test
+    fun showJson() {
+        val str = "{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"UserImportMode\",\"description\":\"商城导入坐席/商铺时请求参数校验\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":1},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":1},\"data\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"mass_name\",\"mass_id\",\"account_id\",\"real_name\"],\"properties\":{\"account_id\":{\"type\":\"string\",\"minLength\":1},\"real_name\":{\"type\":\"string\",\"minLength\":1},\"mass_id\":{\"type\":\"string\",\"minLength\":1},\"mass_name\":{\"type\":\"string\",\"minLength\":1}}}}},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
+        println(JsonObject(str))
+    }
+
+    @Test
+    fun testFilter(){
+        val list = (1 until 10 ).toList()
+        list.parallelStream().filter { it % 2 == 0 }.forEach { println(it) }
+    }
+
+
+    @Test
+    fun testUnion(){
+        val list1 = mutableListOf<Int>(1,2,3,4)
+        val list2= mutableListOf<Int>(1,2,5,6)
+        println(list1.union(list2))
+        println(list1.subtract(list2))
+    }
 }

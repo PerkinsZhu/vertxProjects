@@ -497,7 +497,13 @@ class RXTest {
 
     }
 
-
+    @Test
+    fun testBlock() {
+        val data = Single.just((1 until 100).toList()).map {
+            it.map { it * 10 }
+        }.toBlocking().value()
+        println(data)
+    }
 
 
 }
