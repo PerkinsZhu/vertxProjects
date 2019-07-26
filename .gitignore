@@ -8,4 +8,9 @@ temp
 *.class
 out
 build
+.vscode
+bin
+.classpath
+.project
+.settings
 
