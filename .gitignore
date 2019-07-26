@@ -1,0 +1,11 @@
+.gradle
+.idea
+.vertx
+logs
+META-INF
+temp
+*.jar
+*.class
+out
+build
+
