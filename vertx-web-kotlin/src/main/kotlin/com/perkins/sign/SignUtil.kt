@@ -98,7 +98,7 @@ class SignUtil {
     }
 
 
-    fun createSign(nonce: String, timestamp: Long, token: String, data: JsonArray) {
+    fun createSign(nonce: String, timestamp: Long, token: String, data: Any) {
         val body = JsonObject()
                 .put("nonce", nonce)
                 .put("timestamp", timestamp)

@@ -16,7 +16,7 @@ object SignApp {
         val timestamp = LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
         val token = RandomStringUtils.randomAlphabetic(20).toString()
         try {
-            val data = io.vertx.core.json.JsonArray(dataStr)
+            val data = io.vertx.core.json.JsonObject(dataStr)
             SignUtil().createSign(nonce, timestamp, token, data)
         } catch (e: Exception) {
             println("json format error")

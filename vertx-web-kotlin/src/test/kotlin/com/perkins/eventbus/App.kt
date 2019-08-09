@@ -109,7 +109,7 @@ class App {
 
         try {
             val array = ByteArray(1024)
-            val file = FileInputStream(File("uploads/temp.txt"))
+            val file = FileInputStream(File("uploads/temp.json"))
             var index = -1
             while ({ index = file.read(array);index }() != -1) {
                 val data = array.copyOfRange(0, index)

@@ -51,6 +51,12 @@ dependencies {
     // https://mvnrepository.com/artifact/org.scalatest/scalatest
     testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.2.0-SNAP10'
 
+    compile "org.activiti:activiti-engine:6.0.0"
+    compile "org.activiti:activiti-spring:6.0.0"
+    compile "org.codehaus.groovy:groovy-all:2.4.3"
+    compile "org.slf4j:slf4j-jdk14:1.7.6"
+    compile "org.slf4j:slf4j-api:1.7.6"
+    compile "mysql:mysql-connector-java:5.1.38"
 }
 sourceSets {
     main {

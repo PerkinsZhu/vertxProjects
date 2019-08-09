@@ -500,12 +500,43 @@ class RXTest {
     @Test
     fun testBlock() {
         val data = Single.just((1 until 100).toList()).map {
+            Thread.sleep(2000)
+            println(it)
             it.map { it * 10 }
         }.toBlocking().value()
         println(data)
     }
 
+    @Test
+    fun testException(){
+        Single.just(10).map {
+            10 /0
+        }.doOnError {
+            println("========")
+            it.printStackTrace()
+            throw java.lang.RuntimeException("111111111")
+        }.map {
+            print(it)
+            it
+        }.subscribe({},{
+            println("----")
+            it.printStackTrace()
+        })
+    }
 
+    @Test
+    fun testIntDefault(){
+//        var a:Int
+//        showInt(12)
+        var list: List<Long> = listOf()
+//        val temp =
+        println(list + 5)
+
+    }
+
+    fun showInt(a:Int){
+        println(a)
+    }
 }
 
 interface OnBind {

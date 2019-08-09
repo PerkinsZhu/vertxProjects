@@ -60,7 +60,7 @@ class KotlinTest {
 
     @Test
     fun showJson() {
-        val str = "{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"UserImportMode\",\"description\":\"商城导入坐席/商铺时请求参数校验\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":1},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":1},\"data\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"mass_name\",\"mass_id\",\"account_id\",\"real_name\"],\"properties\":{\"account_id\":{\"type\":\"string\",\"minLength\":1},\"real_name\":{\"type\":\"string\",\"minLength\":1},\"mass_id\":{\"type\":\"string\",\"minLength\":1},\"mass_name\":{\"type\":\"string\",\"minLength\":1}}}}},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
+        val str = "{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"UserUpdateMode\",\"description\":\"坐席名称修改接口\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":10},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":10},\"data\":{\"type\":\"object\",\"properties\":{\"platform\":{\"type\":\"integer\"},\"account_id\":{\"type\":\"string\",\"minLength\":1},\"account_name\":{\"type\":\"string\",\"minLength\":1},\"mass_id\":{\"type\":\"string\",\"minLength\":1}}},\"required\":[\"platform\",\"account_id\",\"account_name\",\"mass_id\"]},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
         println(JsonObject(str))
     }
 
@@ -77,5 +77,28 @@ class KotlinTest {
         val list2= mutableListOf<Int>(1,2,5,6)
         println(list1.union(list2))
         println(list1.subtract(list2))
+        println(list1.intersect(list2))
+        println(list1.minus(list2))
     }
+
+    @Test
+    fun testMap(){
+        val map = mutableMapOf<String,Any>()
+        println(map.getOrDefault("a",100))
+        println(map.getOrElse("a",{100}))
+//        println(map.getValue("a"))
+    }
+    @Test
+    fun testFund(){
+        val list = mutableListOf(1,2,3,4)
+        println(list.filter{ it == 6 }.map {  })
+    }
+    @Test
+    fun testEQ(){
+        val a = "123"
+        val b = "123"
+        println(a == b )
+        println(a.equals(b))
+    }
+
 }

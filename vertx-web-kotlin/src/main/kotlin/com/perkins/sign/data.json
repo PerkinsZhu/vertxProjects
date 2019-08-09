@@ -1,20 +1,5 @@
-[
-  {
-    "account_id": "zuoxi-id-05",
-    "real_name": "zuoxi-name-05",
-    "mass_id": "zpj-massid-05",
-    "mass_name": "ZPJ商铺05"
-  },
-  {
-    "account_id": "zuoxi-id-06",
-    "real_name": "zuoxi-name-06",
-    "mass_id": "zpj-massid-06",
-    "mass_name": "ZPJ商铺06"
-  },
-  {
-    "account_id": "zuoxi-name-07",
-    "real_name": "zuoxi-name-07",
-    "mass_id": "zpj-massid-07",
-    "mass_name": "ZPJ商铺07"
-  }
-]
+{
+  "platform": 1,
+  "mass_id": "zpj-kftest",
+  "mass_name": "zpj-kftest"
+}
