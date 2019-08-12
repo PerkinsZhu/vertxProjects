@@ -8,7 +8,7 @@ import com.perkins.activity.service.AuthService
 
 import scala.collection.JavaConverters._
 import org.activiti.engine.task.Task
-import org.activiti.engine.{FormService, HistoryService, ProcessEngine, ProcessEngineConfiguration, RepositoryService, RuntimeService, TaskService}
+import org.activiti.engine.{FormService, HistoryService, IdentityService, ProcessEngine, ProcessEngineConfiguration, RepositoryService, RuntimeService, TaskService}
 import org.joda.time.LocalDateTime
 import org.junit.{Before, Test}
 
@@ -23,6 +23,7 @@ class TestActivity {
   var fs: FormService = null
   var efs: org.activiti.form.api.FormService = null
   var hs: HistoryService = null
+  var is: IdentityService = null
 
   @Before
   def init(): Unit = {
@@ -33,6 +34,7 @@ class TestActivity {
     fs = engine.getFormService
     efs = engine.getFormEngineFormService
     hs = engine.getHistoryService
+    is = engine.getIdentityService
   }
 
   @Test
@@ -215,8 +217,8 @@ class TestActivity {
   }
 
   def showTask(i: Task): Unit = {
-    println(s"${i.getId} -->${i.getName}--${i.getAssignee}--${i.getProcessVariables.toString}---${i.getTaskLocalVariables}--${i.getExecutionId}" +
-      s"----${i.getTenantId}")
+    println(s"${i.getId} -->${i.getName}--${i.getOwner()}--${i.getAssignee}--${i.getDelegationState}--${i.getProcessVariables.toString}---${i.getTaskLocalVariables}--${i.getExecutionId}" +
+      s"----${i.getTenantId}----${i.getProcessInstanceId}")
     i.getTaskLocalVariables.asScala.foreach(i => println(s"${i._1} -->${i._2}"))
   }
 
@@ -450,6 +452,53 @@ class TestActivity {
     // todo 考虑如何实现任务的回退？
 
   }
+
+
+  @Test
+  def assigneeTest(): Unit = {
+    val processId = "myProcess:11:312504"
+    //    runs.startProcessInstanceById(processId)
+    ts.createTaskQuery().processDefinitionId(processId).list().forEach(i => showTask(i))
+
+    ts.createTaskQuery().processDefinitionId(processId).list().forEach(i => {
+      //              ts.setOwner(i.getId,"user-01") // 可查看taskDiagram,不能completeTask操作
+      //              ts.setAssignee(i.getId,"user-03") // 转办， 可completeTask操作
+      // 委派，被委派人处理结束后，会返回任务到委派人节点。 如果设置了委托人，assignee会变为被委派人，等被委派人resolve之后，委派人会被重新设置为ower
+      // RESOLVED之后，task(未complete)返回到assignee任务列表中，由assignee进行complete操作。
+      // 不存在ower存在assignee(A)时，设置委派人会把assignee设置为ower(A)，resolve之后，ower和assignee都会变为老的assignee(A)
+      // ower 和 assignee都不存在时，直接设置委托人则会把assignee设置为委托人，ower为null。resolve之后，ower和assignee又重置为空。
+      // 存在ower不存在assignee时，ower不变，assignee被设置，resolve之后 assignee和ower保持一致，ower不变。
+      // 汇总：如果ower和assignee都不存在，则resolve 之后，两者都为null。如果两个存在任意一个，则ower不变，assignee会尽量设置一个人，用来保证task有后续处理人。
+      //              ts.delegateTask(i.getId,"user-02")
+      /*  val map = new HashMap[String, Object]()
+        map.put("days", new Integer(10))
+        // 任务 complete之后进去新的节点，则上一节点的ower、assignee都会置空
+        ts.complete(i.getId, map)*/
+
+      ts.addCandidateUser(i.getId, "user-01")
+      ts.addCandidateUser(i.getId, "user-02")
+      ts.addCandidateUser(i.getId, "user-03")
+
+      //      runs.deleteProcessInstance()
+      //      hs.deleteHistoricProcessInstance()
+      //      ts.addCandidateGroup()
+      //      ts.addCandidateUser()
+      //              ts.resolveTask(i.getId) // 被委托的任务只能通过 resolve方式完成任务
+    })
+
+    ts.createTaskQuery().processDefinitionId(processId).list().forEach(i => showTask(i))
+
+    Thread.sleep(5000)
+
+  }
+
+  @Test
+  def testIdentityService(): Unit ={
+    is.setAuthenticatedUserId("")
+    // 提交表单并启动一个新的实例
+    fs.submitStartFormData("",null)
+  }
+
 
 }
 
