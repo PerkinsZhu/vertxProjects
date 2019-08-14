@@ -493,14 +493,49 @@ class TestActivity {
   }
 
   @Test
-  def testIdentityService(): Unit ={
+  def testIdentityService(): Unit = {
     is.setAuthenticatedUserId("")
     // 提交表单并启动一个新的实例
-    fs.submitStartFormData("",null)
+    fs.submitStartFormData("", null)
   }
 
 
+  @Test
+  def initUser() {
+    (1 to 5).toList.foreach(i => {
+      val groupId = s"group-${i}"
+      val group = is.newGroup(groupId)
+      group.setName(groupId)
+      group.setType("assignment")
+      is.saveGroup(group)
+      (1 to 5).toList.foreach(j => {
+        val userId = s"user-${i}-${j}"
+        val user = is.newUser(userId)
+        user.setFirstName(userId)
+        user.setLastName("D")
+        user.setEmail(s"${userId}@local.com")
+        user.setPassword(userId)
+        is.saveUser(user)
+        is.createMembership(userId, groupId)
+      })
+    })
+  }
+
+  @Test
+  def showUser(): Unit = {
+    is.createGroupQuery().list().forEach(group => {
+      is.createUserQuery().memberOfGroup(group.getId).list().forEach(user => {
+        println(s"${group.getId} ---> ${user.getId}")
+      })
+    })
+  }
+
+
+
+
+
 }
+
 
 /*
 
