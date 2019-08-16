@@ -6,10 +6,13 @@ import org.activiti.engine.form.TaskFormData
 import org.activiti.engine.task.Task
 import org.joda.time.LocalDateTime
 import org.junit.{Before, Test}
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
 class VacationTest {
+  val logger = LoggerFactory.getLogger(this.getClass)
+
   var engine: ProcessEngine = null
   var rs: RepositoryService = null
   var ts: TaskService = null
@@ -33,10 +36,12 @@ class VacationTest {
 
   @Test
   def deployed(): Unit = {
-    val fileName = "vacation\\variableProcess-v3.bpmn"
+    val fileName = "vacation\\eventSubProcess.bpmn"
     val de = rs.createDeployment
-      .name("variableProcess-v3" + LocalDateTime.now().toString("YYYY-MM-DD HH:mm:ss"))
-      .addClasspathResource(fileName).deploy();
+      .name("eventSubProcess" + LocalDateTime.now().toString("YYYY-MM-DD HH:mm:ss"))
+      .addClasspathResource(fileName)
+      //      .addClasspathResource("vacation\\callSubProcess.bpmn")
+      .deploy();
     println(de.getId)
     rs.createProcessDefinitionQuery().deploymentId(de.getId).list().forEach(i => println(i.getId))
   }
@@ -268,4 +273,102 @@ class VacationTest {
     println(runs.getVariables(getExecutionId))
     println(runs.getVariablesLocal(getExecutionId))
   }
+
+
+  def completeTask(pdid: String): Unit = {
+    //    val list = ts.createTaskQuery().processDefinitionId(pdid).list()
+    val list = ts.createTaskQuery().list()
+    if (list.isEmpty) return
+    list.forEach(task => {
+      println(s"${task.getId} ---  ${task.getName}")
+      ts.complete(task.getId)
+    })
+    completeTask(pdid)
+  }
+
+  @Test
+  def subProcessTest(): Unit = {
+    /**
+      * 625001
+      * subProcess:1:625004
+      * 630001
+      * subProcess:2:630004
+      *
+      * 640001
+      * subProcess:3:640004
+      */
+    val pdid = "subProcess:3:640004"
+    val instance = runs.startProcessInstanceById(pdid)
+    completeTask(pdid)
+  }
+
+  @Test
+  def callProcessTest(): Unit = {
+    /**
+      * 645001
+      * callProcess:1:645007
+      * callSubProcess:1:645006
+      */
+    val pdid = "callProcess:1:5007"
+    val instance = runs.startProcessInstanceById(pdid)
+    completeTask(pdid)
+  }
+
+  @Test
+  def testEventSubProcess(): Unit = {
+    /**
+      * 10001
+      * eventSubProcess:1:10004
+      * 15001
+      * eventSubProcess:2:15004
+      *
+      * 22501
+      * eventSubProcess:3:22504
+      *
+      * 45001
+      * eventSubProcess:4:45004
+      */
+    val pdid = "eventSubProcess:4:45004"
+    val instance = runs.startProcessInstanceById(pdid)
+    println(instance.getId)
+    completeTask(pdid)
+    //    Thread.sleep(10000)
+  }
+
+  @Test
+  def testSignalProcess(): Unit = {
+    /**
+      * 27501
+      * signalEventProcess:1:27504
+      */
+    val pdid = "signalEventProcess:1:27504"
+    //    val instance = runs.startProcessInstanceById(pdid)
+    //TODO 测试消息 信号捕获事件
+    runs.createExecutionQuery().processDefinitionId(pdid).list().forEach(ex => {
+      if (ex.getId == 30002) {
+        runs.signalEventReceived("startSignal", ex.getId)
+      }
+    })
+    completeTask(pdid)
+
+  }
+
+  @Test
+  def simpleSignalProcessTest(): Unit = {
+    /**
+      * 32501
+      * simpleSignalProcess:1:32504
+      */
+    val pdid = "simpleSignalProcess:1:32504"
+    val instance = runs.startProcessInstanceById(pdid)
+    var task = ts.createTaskQuery().processDefinitionId(pdid).singleResult()
+    showTask(task)
+    ts.complete(task.getId)
+    runs.signalEventReceived("startSignal")
+    task = ts.createTaskQuery().processDefinitionId(pdid).singleResult()
+    showTask(task)
+    ts.complete(task.getId)
+
+  }
+
 }

@@ -9,14 +9,18 @@ import java.time.ZoneOffset
 object SignApp {
     @JvmStatic
     fun main(args: Array<String>) {
-//        val path = System.getProperty("user.dir") + File.separator
+//        val path = System.getProperty("user.dir") + File.separator+"data.json"
         val path = "D:\\myProjects\\vertxProjects\\vertx-web-kotlin\\src\\main\\kotlin\\com\\perkins\\sign\\data.json"
         val dataStr = FileReader(File(path)).readText()
         val nonce = RandomStringUtils.randomAlphabetic(10).toString()
         val timestamp = LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
         val token = RandomStringUtils.randomAlphabetic(20).toString()
         try {
-            val data = io.vertx.core.json.JsonObject(dataStr)
+            val data = if (dataStr.startsWith("[")) {
+                io.vertx.core.json.JsonArray(dataStr)
+            } else {
+                io.vertx.core.json.JsonObject(dataStr)
+            }
             SignUtil().createSign(nonce, timestamp, token, data)
         } catch (e: Exception) {
             println("json format error")
