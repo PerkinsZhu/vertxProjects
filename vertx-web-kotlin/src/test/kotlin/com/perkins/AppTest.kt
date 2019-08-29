@@ -778,5 +778,11 @@ class AppTest {
         println(InetAddress.getLocalHost().hostAddress)
 
     }
+    @Test
+    fun tempTest(){
+        (1 until  1000).toList().forEach { i ->
+            println(i)
+        }
+    }
 
 }

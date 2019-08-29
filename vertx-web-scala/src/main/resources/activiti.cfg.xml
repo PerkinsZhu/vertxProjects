@@ -6,11 +6,15 @@
 
     <bean id="processEngineConfiguration"
           class="org.activiti.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration">
-
-        <property name="jdbcUrl" value="jdbc:mysql://localhost:3308/activiti6ui?useSSL=false"/>
+        <property name="databaseSchemaUpdate" value="false"/>
+        <property name="jdbcUrl" value="jdbc:mysql://10.93.165.250:3306/activiti6ui?useSSL=false"/>
         <property name="jdbcDriver" value="com.mysql.jdbc.Driver"/>
         <property name="jdbcUsername" value="activiti6ui"/>
-        <property name="jdbcPassword" value="activiti6ui"/>
+        <property name="jdbcPassword" value="activiti6ui@HH"/>
+        <!--<property name="jdbcUrl" value="jdbc:mysql://localhost:3308/activiti6ui?useSSL=false"/>
+        <property name="jdbcDriver" value="com.mysql.jdbc.Driver"/>
+        <property name="jdbcUsername" value="activiti6ui"/>
+        <property name="jdbcPassword" value="activiti6ui"/>-->
 
         <property name="history" value="full"/>
         <property name="enableDatabaseEventLogging" value="true"/>

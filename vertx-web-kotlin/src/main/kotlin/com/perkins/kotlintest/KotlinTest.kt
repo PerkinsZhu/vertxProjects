@@ -60,7 +60,7 @@ class KotlinTest {
 
     @Test
     fun showJson() {
-        val str = "{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"UserUpdateMode\",\"description\":\"坐席名称修改接口\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":10},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":10},\"data\":{\"type\":\"object\",\"properties\":{\"platform\":{\"type\":\"integer\"},\"account_id\":{\"type\":\"string\",\"minLength\":1},\"account_name\":{\"type\":\"string\",\"minLength\":1},\"mass_id\":{\"type\":\"string\",\"minLength\":1}}},\"required\":[\"platform\",\"account_id\",\"account_name\",\"mass_id\"]},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
+        val str = "{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"UserImportMode\",\"description\":\"商城导入坐席/商铺时请求参数校验\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":10},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":10},\"data\":{\"type\":\"object\",\"properties\":{\"platform\":{\"type\":\"integer\"},\"list\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"account_id\",\"leave_start_time\",\"leave_end_time\",\"platform\"],\"properties\":{\"account_id\":{\"type\":\"string\",\"minLength\":1},\"agent_id\":{\"type\":\"string\"},\"agent_name\":{\"type\":\"string\"},\"leave_start_time\":{\"type\":\"integer\"},\"leave_end_time\":{\"type\":\"integer\"},\"platform\":{\"type\":\"integer\"}}}}},\"required\":[\"platform\",\"list\"]}},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
         println(JsonObject(str))
     }
 
@@ -79,6 +79,9 @@ class KotlinTest {
         println(list1.subtract(list2))
         println(list1.intersect(list2))
         println(list1.minus(list2))
+        println(list1+ list2)
+
+        println(list1.joinToString(",") { "?" })
     }
 
     @Test
