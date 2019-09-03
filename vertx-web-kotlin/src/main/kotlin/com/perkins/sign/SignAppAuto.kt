@@ -18,7 +18,7 @@ object SignAppAuto {
         val token = RandomStringUtils.randomAlphabetic(20).toString()
         try {
 
-            val list = (1 until  1000).toList().map { i ->
+            val list = (1 until  20).toList().map { i ->
                 JsonObject().put("mass_id", "zpj-auto-$i")
                         .put("mass_name", "zpj-auto-$i")
                         .put("account_id", "zpj-auto-id-$i")

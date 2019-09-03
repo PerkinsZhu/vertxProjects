@@ -1,5 +1,8 @@
 package com.perkins;
 
+import io.thekraken.grok.api.Grok;
+import io.thekraken.grok.api.Match;
+import io.thekraken.grok.api.exception.GrokException;
 import org.activiti.engine.*;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.runtime.ProcessInstance;
@@ -151,5 +154,38 @@ public class TeatApp {
 
 
     }
+
+
+    @Test
+    public void testGroy(){
+        String path ="D:\\myProjects\\vertxProjects\\vertx-web-scala\\src\\main\\java\\com\\perkins\\patterns.txt";
+        String pattern = "%{MONTH}\\s+%{MONTHDAY}\\s+%{TIME}\\s+%{YEAR}.*%{fromIP}";
+        String message = "Mon Nov  9 06:47:33 2015; UDP; eth1; 461 bytes; from 88.150.240.169:tag-pm";
+        String message2 = "[idc=shyc2,app=crm-b570ce,pod=crm-b570ce-7f47457794-52ndh,filename=api-gateway.log] 2019-09-03 11:52:50.349 [vert.x-eventloop-thread-1] WARN  io.its.api.MainGatewayVerticle - -> Start Api GateWay [SUCCESS], Listen Port:8080";
+//        String pattern2 = "%{MY_DATESTAMP}";
+//        String pattern2 = "%{MID}";
+        String pattern2 = "%{MESSAGE}";
+        Match match = null;
+        try {
+            Grok grok = new Grok();
+            //添加patter配置文件,默认的grok的pattern是null
+            grok.addPatternFromFile(path);
+            //添加自定义pattern，当然%{IPV4}可以不用已有pattern，也可以自定义正则表达式
+//            grok.addPattern("fromIP", "%{IPV4}");
+            grok.compile(pattern2);
+            match = grok.match(message2);
+            match.captures();
+            if (!match.isNull()) {
+                System.out.println(match.toMap().toString());
+                System.out.println(match.toJson().toString());
+            } else {
+                System.out.println("not match");
+            }
+        } catch (GrokException e) {
+            e.printStackTrace();
+            match = null;
+        }
+    }
+
 
 }

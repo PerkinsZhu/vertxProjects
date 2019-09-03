@@ -127,7 +127,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.alibaba/fastjson
     compile group: 'com.alibaba', name: 'fastjson', version: '1.2.58'
 
-
+    compile "com.google.dagger:dagger:2.10"
+    kapt "com.google.dagger:dagger-compiler:2.10"
 
 }
 
