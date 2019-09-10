@@ -90,6 +90,8 @@ class KotlinTest {
         println(map.getOrDefault("a",100))
         println(map.getOrElse("a",{100}))
 //        println(map.getValue("a"))
+        val a:String ?= null
+        map["111"] = a!!
     }
     @Test
     fun testFund(){
