@@ -1,26 +1,13 @@
 {
-  "platform": 16,
+  "platform": 4,
   "list": [
     {
-      "mass_id": "zpj-auto-1",
-      "mass_name": "zpj-auto-1",
-      "account_id": "zpj-auto-id-1",
-      "account": "zpj-auto-id-1",
-      "real_name": "zpj-auto-name-1",
-      "isoutsource": false
-    },
-    {
-      "mass_id": "zpj-auto-2",
-      "mass_name": "zpj-auto-2",
-      "account_id": "zpj-auto-id-2",
-      "account": "zpj-auto-id-2",
-      "real_name": "zpj-auto-name-2",
-      "isoutsource": false
+      "account_id": "zpj-urge-011-2",
+      "agent_id": "zpj-urge-04-1",
+      "agent_name": "zpj-urge-04-1",
+      "leave_start_time": 1563129787000,
+      "leave_end_time": 1596957282000,
+      "platform": 4
     }
   ]
 }
-第一次提交
-第二次提交
-第三次提交
-
-5

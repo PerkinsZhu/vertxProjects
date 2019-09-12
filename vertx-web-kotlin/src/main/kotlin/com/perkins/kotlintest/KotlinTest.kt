@@ -52,8 +52,10 @@ class KotlinTest {
 
     @Test
     fun testAdd() {
+
         var a = 0;
         (1 until 10).toList().forEach {
+
             println(++a)
         }
     }
@@ -106,4 +108,9 @@ class KotlinTest {
         println(a.equals(b))
     }
 
+    @Test
+    fun testRandom(){
+        val str = Math.random().toChar()
+        println(str)
+    }
 }
