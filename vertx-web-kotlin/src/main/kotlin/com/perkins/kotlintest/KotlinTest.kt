@@ -1,8 +1,15 @@
 package com.perkins.kotlintest
 
 import com.perkins.bean.User
+import com.perkins.common.PropertiesUtil
+import com.perkins.util.DESUtils
 import io.vertx.core.json.JsonObject
+import org.apache.commons.codec.binary.Base64
 import org.junit.Test
+import sun.misc.BASE64Encoder
+import java.security.SecureRandom
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 
 class KotlinTest {
@@ -67,50 +74,172 @@ class KotlinTest {
     }
 
     @Test
-    fun testFilter(){
-        val list = (1 until 10 ).toList()
+    fun testFilter() {
+        val list = (1 until 10).toList()
         list.parallelStream().filter { it % 2 == 0 }.forEach { println(it) }
     }
 
 
     @Test
-    fun testUnion(){
-        val list1 = mutableListOf<Int>(1,2,3,4)
-        val list2= mutableListOf<Int>(1,2,5,6)
+    fun testUnion() {
+        val list1 = mutableListOf<Int>(1, 2, 3, 4)
+        val list2 = mutableListOf<Int>(1, 2, 5, 6)
         println(list1.union(list2))
         println(list1.subtract(list2))
         println(list1.intersect(list2))
         println(list1.minus(list2))
-        println(list1+ list2)
+        println(list1 + list2)
 
         println(list1.joinToString(",") { "?" })
     }
 
     @Test
-    fun testMap(){
-        val map = mutableMapOf<String,Any>()
-        println(map.getOrDefault("a",100))
-        println(map.getOrElse("a",{100}))
+    fun testMap() {
+        val map = mutableMapOf<String, Any>()
+        println(map.getOrDefault("a", 100))
+        println(map.getOrElse("a", { 100 }))
 //        println(map.getValue("a"))
-        val a:String ?= null
+        val a: String? = null
         map["111"] = a!!
+
     }
+
     @Test
-    fun testFund(){
-        val list = mutableListOf(1,2,3,4)
-        println(list.filter{ it == 6 }.map {  })
+    fun testFund() {
+        val list = mutableListOf(1, 2, 3, 4)
+        println(list.filter { it == 6 }.map { })
     }
+
     @Test
-    fun testEQ(){
+    fun testEQ() {
         val a = "123"
         val b = "123"
-        println(a == b )
+        println(a == b)
         println(a.equals(b))
     }
 
     @Test
-    fun testRandom(){
+    fun testRandom() {
         val str = Math.random().toChar()
         println(str)
+    }
+
+    @Test
+    fun createSalt() { // 创建随机盐值
+        val byteArray = ByteArray(16)
+        SecureRandom().nextBytes(byteArray)
+        val salt = BASE64Encoder().encode(byteArray)
+        println(salt)
+    }
+
+    @Test
+    fun getStr() {
+//        val pattern = Pattern.compile("(1(([35][0-9])|(47)|8[0126789]))(\\s|-)*\\d{4}(\\s|-)*\\d{4}");
+        val pattern = Pattern.compile("\\(*0\\d{2,3}\\)*-*\\d{7,8}")
+        val matcher = pattern.matcher("我的电话号码是：147 83600246100，请给我大地1583600246100啊阿虎请给我大地158 3600 246100啊阿虎" +
+                "请给我大地1583600 246100啊阿虎" +
+                "请给我大地158-3600-246100啊阿虎" +
+                "请给我大地158-3600246100啊阿虎" +
+                "请给我大地1583600-246100啊阿虎" +
+                "021-66522555" +
+                "02166522555" +
+                "(021)66522555" +
+                "(021)-66522555");
+        while (matcher.find()) {
+            println(matcher.group())
+            println(matcher.groupCount())
+        }
+    }
+
+    @Test
+    fun getRegex() {
+//        val pattern = Pattern.compile("\\(*0\\d{2,3}\\)*-*\\d{7,8}")
+        val id_18= "([1-6][1-9]|50)\\d{4}(18|19|20)\\d{2}((0[1-9])|10|11|12)(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]"
+        val id_15 = "([1-6][1-9]|50)\\d{4}\\d{2}((0[1-9])|10|11|12)(([0-2][1-9])|10|20|30|31)\\d{3}"
+        val phone = "(^\\d{15}\$)|(^\\d{18}\$)|(^\\d{17}(\\d|X|x)\$)"
+//        val mail = "^[A-Za-z0-9\\u4e00-\\u9fa5]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+\$"
+//        val mail = "[A-Za-z\\d]+([-_.][A-Za-z\\d]+)*@([A-Za-z\\d]+[-.])+[A-Za-z\\d]{2,4}"
+        val mail = "[a-z0-9A-Z]+[-|a-z0-9A-Z._]+@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-z]{2,}"
+
+        val str1 =
+        //                "我的电话号码是：412325182303135417 sss" +
+//                "440204197911113613谁家" +
+//                "522528199008133616哈哈哈" +
+                "32031177070600" +
+                        "是3255133@qq.com"+
+                        "是skuher@qq.com.cn"+
+                        "是sku-her@qq.com.cn"+
+                        "是skuh.er@qq.com.cn"+
+                        "是12-we45564@qq.com"+
+                        "是kw.we-1245564@qq.com"+
+                        "是jd-l1245564@qq.com.cn"+
+                        "是:3255133@qq.com"
+        val str = "我的电话号码是：412325182303135417 sss 440204197911113613谁家 522528199008133616哈哈哈 32031177070600122撒的发生 320311770706002AAAA 320311770706002333 320311770706001BBBB 3203117707060012222 我的邮箱是：1245564@qq.com 我的邮箱是：12-we45564@qq.com 我的邮箱是：jd-l1245564@qq.com.cn 我的邮箱是：kw.we-1245564@qq.com"
+        val pattern = Pattern.compile(mail)
+        val matcher = pattern.matcher(str)
+
+
+        while (matcher.find()) {
+            println(matcher.group())
+            println(matcher.groupCount())
+        }
+    }
+
+    @Test
+    fun testReplace(){
+        val test = "kw.we-1245564@qq.com"
+        val str = "我的邮箱是：1245564@qq.com 我的邮箱是：12-we45564@qq.com 我的邮箱是：jd-l1245564@qq.com.cn 我的邮箱是：kw.we-1245564@qq.com"
+        println(str.replace(test,""))
+
+    }
+    @Test
+    fun testDesUtil() {
+        val password = PropertiesUtil.get("despassword")
+        val context = "oRv+QkvNNL8="
+        val originData = String(DESUtils.decrypt(Base64.decodeBase64(context), password))
+        println(originData)
+    }
+
+    @Test
+    fun testLet() {
+        val a: String? = null
+        val aa = a.let {
+            it + "aaa"
+        }
+        print(aa)
+    }
+
+    @Test
+    fun testJsonObject(){
+        val data = JsonObject().put("AA","11")
+        val str = data.getString("AA")
+        if(!str.isNullOrBlank()){
+            println(str)
+        }
+    }
+
+
+    @Test
+    fun testParStream(){
+        val list = (1 until 10).toList()
+        list.parallelStream().forEach {
+            Thread.sleep(1000)
+            println(it)
+        }
+        println("==end")
+
+        val map = mutableMapOf<String,String>()
+        map.put("aa","ddd")
+        val a :String? =null
+        println(map.get(a))
+
+    }
+
+
+    @Test
+    fun testCombin(){
+        val l1 = mutableListOf(1,2,3)
+        val l2 = mutableListOf(14,5,6)
+        println(l1 + l2)
     }
 }
