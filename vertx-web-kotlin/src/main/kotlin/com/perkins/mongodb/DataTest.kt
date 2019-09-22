@@ -297,4 +297,66 @@ object DataTest {
         }
         logger.info("===END====")
     }
+
+    private fun test7(vertx: Vertx, client: MongoClient, table: String, query: JsonObject) {
+        var isRunning = true
+        val limit = 5000
+        client.rxCount(table, query).flatMap { count ->
+
+            var pageCount = ((50000 / limit) + 1).toInt()
+            logger.info("count = $count")
+            vertx.rxExecuteBlocking<List<Single<Int>>> {
+                val aa = (0 until pageCount).map { i ->
+                    val skip = (i * limit)
+                    val options = FindOptions()
+                            .setLimit(limit)
+                            .setSkip(skip)
+                            .setBatchSize(500)
+                    client.rxFindWithOptions(table, query, options)
+                            .flatMap { list ->
+                                Thread.sleep(2000) //睡眠兩秒，等待此輪任务执行结束，腾出缓存
+                                logger.info("updating……$skip")
+                                logger.info("1 thread${Thread.currentThread().name}")
+                                Single.just(1)
+//                                        .observeOn(Schedulers.computation())
+                                        .map{
+                                            logger.info("2 thread${Thread.currentThread().name}")
+                                            list.parallelStream().map { json ->
+                                                val _id = json.getJsonObject("_id")
+                                                val query = JsonObject().put("_id", _id)
+                                                val update = JsonObject().put("\$set", JsonObject().put("d4", json.getString("d1")))
+                                                BulkOperation.createUpdate(query, update, false, true)
+                                            }.toList()
+                                        }
+//                                        .observeOn(Schedulers.io())
+                                        .flatMap { newJson ->
+                                            logger.info("3 thread${Thread.currentThread().name}")
+                                            client.rxBulkWrite(table, newJson).map {
+                                                logger.info(it.toJson().toString())
+                                                logger.info("updating completed ……$skip")
+                                                1
+                                            }
+                                        }
+                            }
+                }
+                it.complete(aa)
+            }
+        }.flatMap {
+            Single.zip(it) {
+                logger.info("共完成任务数量：" + it.size)
+                "end"
+            }
+        }.subscribe({
+            isRunning = false
+        }, {
+            it.printStackTrace()
+            isRunning = false
+        })
+
+        while (isRunning) {
+            Thread.sleep(1000)
+            logger.info("isRunning")
+        }
+        logger.info("===END====")
+    }
 }
