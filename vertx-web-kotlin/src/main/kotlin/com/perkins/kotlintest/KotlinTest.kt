@@ -7,6 +7,7 @@ import com.perkins.util.DESUtils
 import io.vertx.core.json.JsonObject
 import org.apache.commons.codec.binary.Base64
 import org.junit.Test
+import org.springframework.util.DigestUtils
 import rx.Single
 import rx.plugins.RxJavaCompletableExecutionHook
 import sun.misc.BASE64Encoder
@@ -313,4 +314,13 @@ class KotlinTest {
         println("stop……")
     }
 
+
+    @Test
+    fun testMD5(){
+//        val id = "zpj-urge-03-1"
+        val id = "temp-user-02"
+//        val id = "temp-user-01"
+        val res = DigestUtils.md5DigestAsHex(id.toByteArray()).substring(8, 24)
+        println(res)
+    }
 }

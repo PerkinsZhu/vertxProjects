@@ -1,6 +1,8 @@
 package com.perkins
 
+import io.vertx.rxjava.core.Vertx
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
 
 object TestMain {
     @JvmStatic
@@ -21,5 +23,31 @@ class  Temp(){
             it +"123"
         }
         println(b)
+    }
+
+
+    @Test
+    fun closeJVMWhenVertx() {
+        val vertx = Vertx.vertx()
+        val countDownLatch = CountDownLatch(1)
+
+
+        vertx.rxExecuteBlocking<Int> {
+            Thread.sleep(4000)
+            println("=====end====")
+            it.complete(12)
+        }.subscribe {
+            println(it)
+            vertx.close {
+                countDownLatch.countDown()
+            }
+        }
+
+        Runtime.getRuntime().addShutdownHook(Thread(Runnable {
+            countDownLatch.await()
+            println("----runtime end-------")
+        }))
+
+        println("exist")
     }
 }
