@@ -316,11 +316,43 @@ class KotlinTest {
 
 
     @Test
-    fun testMD5(){
+    fun testMD5() {
 //        val id = "zpj-urge-03-1"
         val id = "temp-user-02"
 //        val id = "temp-user-01"
         val res = DigestUtils.md5DigestAsHex(id.toByteArray()).substring(8, 24)
         println(res)
     }
+
+
+    @Test
+    fun testASCALL() {
+        val list = mutableListOf("1", "2", "3", "a", "b", "c", "你", "我", "他")
+        list.forEach {
+            it.toByteArray().forEach {
+                print(it.toString())
+            }
+            println()
+        }
+
+//        val byte = Byte(1)
+        "12".toByteArray().forEach {
+            print(it.toString())
+        }
+
+
+
+
+    }
+
+    @Test
+    fun testBase64() {
+        val str = "abc,ABD,123,你我他"
+        val base64 = Base64()
+        str.forEach {
+            print(it.toByte())
+//        base64.encodeAsString()
+        }
+    }
+
 }
