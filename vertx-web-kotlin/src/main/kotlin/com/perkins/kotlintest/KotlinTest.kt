@@ -4,6 +4,9 @@ import com.hazelcast.client.impl.protocol.codec.AtomicReferenceIsNullCodec
 import com.perkins.bean.User
 import com.perkins.common.PropertiesUtil
 import com.perkins.util.DESUtils
+import io.vertx.core.CompositeFuture
+import io.vertx.core.Future
+import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
 import org.apache.commons.codec.binary.Base64
 import org.junit.Test
@@ -11,6 +14,7 @@ import org.springframework.util.DigestUtils
 import rx.Single
 import rx.plugins.RxJavaCompletableExecutionHook
 import sun.misc.BASE64Encoder
+import java.lang.RuntimeException
 import java.security.SecureRandom
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -77,7 +81,7 @@ class KotlinTest {
 
     @Test
     fun showJson() {
-        val str = "{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"UserImportMode\",\"description\":\"商城导入坐席/商铺时请求参数校验\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":10},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":10},\"data\":{\"type\":\"object\",\"properties\":{\"platform\":{\"type\":\"integer\"},\"list\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"account_id\",\"leave_start_time\",\"leave_end_time\",\"platform\"],\"properties\":{\"account_id\":{\"type\":\"string\",\"minLength\":1},\"agent_id\":{\"type\":\"string\"},\"agent_name\":{\"type\":\"string\"},\"leave_start_time\":{\"type\":\"integer\"},\"leave_end_time\":{\"type\":\"integer\"},\"platform\":{\"type\":\"integer\"}}}}},\"required\":[\"platform\",\"list\"]}},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
+        val str ="{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"encryptDataAddSchema\",\"description\":\"添加加密事件\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":10},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":10},\"data\":{\"type\":\"object\",\"properties\":{\"event_id\":{\"type\":\"string\",\"minLength\":1},\"context\":{\"type\":\"string\",\"minLength\":1}},\"required\":[\"event_id\",\"context\"]}},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
         println(JsonObject(str))
     }
 
@@ -341,8 +345,6 @@ class KotlinTest {
         }
 
 
-
-
     }
 
     @Test
@@ -355,4 +357,41 @@ class KotlinTest {
         }
     }
 
+    @Test
+    fun testRegexBase64() {
+        val data = "/NRtHMP970zhnmz3dfv9glyce1n手动阀m/ETI0VVCyvVC8onnWEjgmZwBzxkJCgeMWsOYg+qEJsM3tRjVS+mKchlUkLs8C7shGhKKWLvhcY9+dUhd1ufSp6f2ONRNKZ/Jmfl0417KyrlpJooBsZLPIw0K6uzqyboU+2tsBydS8DNS4rUPmPaPNqvjbzriD77WeKOyHkVwHZ4HVbBllLCmI++VpOgYnoPusFgPiLxWAJEH/On/0DSup+btCnE6FVMD9IS9ia5fzs9tqlJQy91L1Xmp1JNy59Dzr3xg4I4vdKRfhuNC0NaOMoJLQDkstiOfGYtBOdJOx+c5EtnXTKDulmUo3Rn8PWe3/7eK6+ygaEi2NrtswvUTGc2ciq2o5/yVo0xoZj3RjqLwB7YpN/+Sxw1w7LSV838fwi3DB4ji0G/xBxKtqOf8laNMaGY90Y6i8Ae2aC0b738p8R/KNSeuWtpjSCFUxRaXcpFu"
+        val regex = Regex("^[a-zA-Z0-9/+]*={0,2}\$")
+        val d = regex.matches(data)
+        print(d)
+    }
+
+    @Test
+    fun testWhen() {
+        val a = RuntimeException("123")
+        when (a) {
+            is RuntimeException -> {
+                println("=====")
+            }
+            else -> println("----")
+        }
+    }
+
+
+    @Test
+    fun testCompose() {
+        val f1 = Future.future<Int>()
+        val f2 = Future.future<Int>().map {
+            println("====")
+            2
+        }
+        f1.complete(2)
+        f2.complete(10)
+
+        CompositeFuture.all(f1,f2).setHandler {
+            println(it.succeeded())
+            println(it.result())
+        }
+
+        Thread.sleep(4000)
+    }
 }
