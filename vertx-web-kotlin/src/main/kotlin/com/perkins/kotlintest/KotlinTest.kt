@@ -11,10 +11,12 @@ import io.vertx.core.json.JsonObject
 import org.apache.commons.codec.binary.Base64
 import org.junit.Test
 import org.springframework.util.DigestUtils
+import rx.Observable
 import rx.Single
 import rx.plugins.RxJavaCompletableExecutionHook
 import sun.misc.BASE64Encoder
 import java.lang.RuntimeException
+import java.nio.charset.Charset
 import java.security.SecureRandom
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -349,12 +351,20 @@ class KotlinTest {
 
     @Test
     fun testBase64() {
+/*
         val str = "abc,ABD,123,你我他"
         val base64 = Base64()
         str.forEach {
             print(it.toByte())
 //        base64.encodeAsString()
         }
+*/
+
+        val data = "ASDFASDFASDFA\n" +
+                "http://127.0.0.1/app.html?platform=crm&account=zpj-kf-02&ip=127.0.0.1:8081&developer=0"
+        println(String(Base64(true).encode(data.toByteArray()),Charset.forName("UTF-8")))
+        println(String(Base64(false).encode(data.toByteArray())))
+        println(String(Base64.encodeBase64(data.toByteArray()),Charset.forName("UTF-8")))
     }
 
     @Test
@@ -393,5 +403,18 @@ class KotlinTest {
         }
 
         Thread.sleep(4000)
+    }
+
+
+    @Test
+    fun testRxJava(){
+        Observable.from( 0 until  100).map {
+            println(it)
+            it
+        }.toList().map {
+            println(it)
+        }
+
+                .subscribe()
     }
 }
