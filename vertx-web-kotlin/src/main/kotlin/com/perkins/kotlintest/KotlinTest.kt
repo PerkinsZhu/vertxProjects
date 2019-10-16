@@ -476,20 +476,28 @@ future.setHandler{
     }
 
     @Test
-    fun testUTcTime(){
+    fun testUTcTime() {
         val nowTime = LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
         println(nowTime)
         println(LocalDateTime.now().toInstant(ZoneOffset.ofHours(0)).toEpochMilli())
 
-        println( LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli())
+        println(LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli())
 
         println(LocalDateTime.now().atZone(ZoneOffset.UTC).toInstant().toEpochMilli())
         val now = LocalDateTime.now(ZoneOffset.UTC)
         println(now.atZone(ZoneOffset.UTC)?.toInstant()?.toEpochMilli())
-        val  cal = Calendar.getInstance();
+        val cal = Calendar.getInstance();
         println(cal.getTimeInMillis())
         println(System.currentTimeMillis())
 
     }
 
+    @Test
+    fun testObserver() {
+        Observable.from(0 until 100).flatMap {
+            Single.just(it).map {
+                println(it)
+            }.toObservable()
+        }.toList().subscribe()
+    }
 }

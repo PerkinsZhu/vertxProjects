@@ -8,84 +8,61 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Single
-import rx.Single.just
 import rx.schedulers.Schedulers
+import java.lang.NullPointerException
+import javax.swing.plaf.synth.SynthScrollBarUI
 
 class JsonParse {
     val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     @Test
     fun testUpdateJson() {
-        val str = "{\"condition\":{\"\$and\":[{\"event_classify_id\":\"5d8044fd7404c5a1307daa12\",\"context\":{\"\$regex\":\"号码是\"},\"publish_date\":{\"\$gte\":1570464000000,\"\$lte\":1572537599000},\"handle_status\":3,\"nodes\":{\"\$elemMatch\":{\"handle_date\":{\"\$gte\":1569859200000,\"\$lte\":1572537599000}}}},{\"\$or\":[{\"__FIELD__mobile\":\"15888888888\"},{\"\$and\":[{\"__FIELD__mobile\":{\"\$ne\":null,\"\$exists\":true}},{\"__FIELD__mobile\":{\"\$in\":[null],\"\$exists\":true}},{\"__FIELD__wqere\":\"asdfd\"}]}]}]},\"showTable\":true,\"currentPage\":1}\n"
+        val str = "{\"condition\":{\"\$and\":[{\"event_classify_id\":\"5d8044fd7404c5a1307daa12\",\"context\":{\"\$regex\":\"context\"}},{\"\$and\":[{\"\$or\":[{\"__FIELD__msutfill\":{\"\$regex\":\"123\"}},{\"__FIELD__custNo\":{\"\$regex\":\"qwer\"}},{\"\$and\":[{\"__FIELD__mobile\":\"15888888\"},{\"__FIELD__custNo\":{\"\$regex\":\"00000000000\"}},{\"__FIELD__wqere\":\"8559565232\"},{\"__FIELD__custNo\":\"1221212121212121212\"},{\"__FIELD__custNo\":{\"\$ne\":null,\"\$exists\":true}}]},{\"__FIELD__mobile\":{\"\$in\":[null],\"\$exists\":true}}]},{\"\$and\":[{\"__FIELD__custNo\":{\"\$regex\":\"asdfasdfasdf\"}},{\"__FIELD__custNo\":\"sssdasdfasdf\"},{\"__FIELD__mobile\":{\"\$ne\":null,\"\$exists\":true}}]},{\"\$and\":[{\"__FIELD__custNo\":\"asdfasdfasdfasdf\"},{\"__FIELD__custNo\":\"asdfasdfasdfasdfasdf\"},{\"__FIELD__mobile\":{\"\$ne\":null,\"\$exists\":true}}]}]}]},\"showTable\":true,\"currentPage\":1}\n"
         val json = JsonObject(str).getJsonObject("condition")
-        val dataMap = mutableMapOf<String, Any>()
-
-        val list = mutableListOf<Observable<JsonArray>>()
-
-        Single.just(getEncryptionField(json, dataMap)).map { map ->
-            // 这里虽然用subscribeOn切换了线程，但这里也就是串行的
-            map.map { item ->
-                when (item.key == "context") {
-                    true -> {
-                        getEventId(item.value as String).map {
-                            JsonObject().put(item.key, it)
-                        }
-                    }
-                    false -> {
-                        encryptData(item.value as String).map {
-                            JsonObject().put(item.key, it)
-                        }
-                    }
-                }
-            }
-        }.flatMap { singleList ->
-            singleList.fold(just(JsonObject())) { a, b ->
-                Single.zip(a, b) { c, d ->
-                    c.mergeIn(d)
-                }
-            }.map {
-                val data = replaceData(json, it)
-                logger.info(data.toString())
-            }
-        }.subscribe()
-        Thread.sleep(4000)
+        println(json)
+        val start = System.currentTimeMillis()
+        val list = mutableListOf<Single<*>>()
+        getEncryptionField(json, list)
+        Observable.from(list).flatMap {
+            it.toObservable()
+        }.toList().observeOn(Schedulers.immediate()).subscribe {
+            println(json)
+            print(System.currentTimeMillis() - start)
+        }
     }
 
     // 字段加密
-    fun encryptData(context: String): Single<String> {
+    fun encryptData(context: String, handler: Handler<String>): Single<String> {
         return Single.create<String> { sub ->
-            Thread(Runnable {
                 Thread.sleep(3000) //模拟耗时
                 logger.info("加密数据：$context")
-                sub.onSuccess("加密密文")
-            }).start()
-        }
+                val result = "UESDILWJMIEVASDFASDSLIDUFHJASDFSADFASDFLOADHJL"
+                handler.handle(result)
+                sub.onSuccess(result)
+//                sub.onError(NullPointerException())
+        }.subscribeOn(Schedulers.computation())
     }
 
     //模糊查询
-    fun getEventId(context: String): Single<JsonArray> {
-        logger.info("模糊查询：$context")
+    fun getEventId(context: String, handler: Handler<JsonArray>): Single<JsonArray> {
         return Single.create<JsonArray> { sub ->
-            Thread(Runnable {
-                Thread.sleep(2000)//模拟耗时
+                logger.info("模糊查询：$context")
+                Thread.sleep(5000)//模拟耗时
                 // 调用mysql执行模糊查询
-                val handler = Handler<JsonArray> {
-                    logger.info("获取到模糊搜索结果")
-                    sub.onSuccess(it)
-                }
-                handler.handle(JsonArray().add("id1").add("id2"))
-            }).start()
-        }
+                val result = JsonArray().add("id1").add("id2")
+                handler.handle(result)
+                sub.onSuccess(result)
+        }.subscribeOn(Schedulers.io())
     }
 
 
     //提取加密数据
-    private fun getEncryptionField(condition: JsonObject, map: MutableMap<String, Any>): MutableMap<String, Any> {
+    private fun getEncryptionField(condition: JsonObject, list: MutableList<Single<*>>): MutableList<Single<*>> {
         condition.forEach { entry ->
             if (entry.value is JsonArray) {// 如果是数组则循环处理
                 (entry.value as JsonArray).forEach {
                     if (it != null) {
-                        getEncryptionField(it as JsonObject, map)
+                        getEncryptionField(it as JsonObject, list)
                     }
                 }
             } else {
@@ -93,25 +70,39 @@ class JsonParse {
                     "context" -> {
                         val context = entry.value
                         if (context is JsonObject) {
-                            val context = context.getString("\$regex")
-                            if (!context.isNullOrBlank()) {
-                                map[entry.key] = context
+                            val newContext = context.getString("\$regex")
+                            if (!newContext.isNullOrBlank()) {
+                                list.add(getEventId(newContext, Handler {
+                                    condition.remove("context")
+                                    condition.put("_id", JsonObject().put("\$in", it))
+                                }))
                             }
-
                         }
                     }
                     else -> {
                         when (key.startsWith("__FIELD__")) {
                             true -> {
                                 if (entry.value is String) {
-                                    map[entry.key] = entry.value
+                                    list.add(encryptData(entry.value as String, Handler {
+                                        condition.put(entry.key, it)
+                                    }))
                                 } else {
-                                    getEncryptionField(entry.value as JsonObject, map)
+                                    if (entry.value.toString().contains("\$regex")) {
+                                        val regex = entry.value as JsonObject
+                                        val context = regex.getString("\$regex")
+                                        if (!context.isNullOrBlank()) {
+                                            list.add(encryptData(context, Handler {
+                                                regex.put("\$regex", it)
+                                            }))
+                                        }
+                                    } else {
+                                        getEncryptionField(entry.value as JsonObject, list)
+                                    }
                                 }
                             }
                             false -> {
                                 if (entry.value is JsonObject) {
-                                    getEncryptionField(entry.value as JsonObject, map)
+                                    getEncryptionField(entry.value as JsonObject, list)
                                 }
                             }
                         }
@@ -119,59 +110,6 @@ class JsonParse {
                 }
             }
         }
-        return map
-    }
-
-    //数据替换
-    private fun replaceData(condition: JsonObject, data: JsonObject): Any {
-        val result = JsonObject()
-        condition.map { entry ->
-            if (entry.value is JsonArray) {// 如果是数组则循环处理
-                val list = (entry.value as JsonArray).map {
-                    it?.let { item ->
-                        replaceData(item as JsonObject, data)
-                    }
-                }
-                JsonObject().put(entry.key, list)
-            } else {
-                when (val key = entry.key) {
-                    "context" -> {
-                        val context = entry.value
-                        if (context is JsonObject && !context.getString("\$regex").isNullOrBlank()) {
-                            JsonObject().put("_id", JsonObject().put("\$in", data.getValue("context")))
-                        } else {
-                            entry
-                        }
-                    }
-                    else -> {
-                        when (key.startsWith("__FIELD__")) {
-                            true -> {
-                                if (entry.value is String) {
-                                    val context = data.getValue(entry.key)
-                                    JsonObject().put(entry.key, context)
-                                } else {
-                                    JsonObject().put(entry.key, replaceData(entry.value as JsonObject, data))
-                                }
-                            }
-                            false -> {
-                                if (entry.value is JsonObject) {
-                                    JsonObject().put(entry.key, replaceData(entry.value as JsonObject, data))
-                                } else {
-                                    entry
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }.forEach {
-            if (it is JsonObject) {
-                result.mergeIn(it)
-            } else {
-                val item = it as Map.Entry<String, Any>
-                result.put(item.key, item.value)
-            }
-        }
-        return result
+        return list
     }
 }
