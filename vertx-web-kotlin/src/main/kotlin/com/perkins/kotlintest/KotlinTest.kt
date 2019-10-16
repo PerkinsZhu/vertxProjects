@@ -7,6 +7,7 @@ import com.perkins.util.DESUtils
 import io.vertx.core.CompositeFuture
 import io.vertx.core.Future
 import io.vertx.core.Handler
+import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.apache.commons.codec.binary.Base64
 import org.junit.Test
@@ -19,7 +20,9 @@ import java.lang.RuntimeException
 import java.nio.charset.Charset
 import java.security.SecureRandom
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -83,7 +86,7 @@ class KotlinTest {
 
     @Test
     fun showJson() {
-        val str ="{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"encryptDataAddSchema\",\"description\":\"添加加密事件\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":10},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":10},\"data\":{\"type\":\"object\",\"properties\":{\"event_id\":{\"type\":\"string\",\"minLength\":1},\"context\":{\"type\":\"string\",\"minLength\":1}},\"required\":[\"event_id\",\"context\"]}},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
+        val str = "{\"\$schema\":\"http://json-schema.org/draft-04/schema#\",\"title\":\"encryptDataAddSchema\",\"description\":\"添加加密事件\",\"type\":\"object\",\"properties\":{\"nonce\":{\"type\":\"string\",\"minLength\":10},\"timestamp\":{\"type\":\"number\"},\"token\":{\"type\":\"string\",\"minLength\":10},\"data\":{\"type\":\"object\",\"properties\":{\"event_id\":{\"type\":\"string\",\"minLength\":1},\"context\":{\"type\":\"string\",\"minLength\":1}},\"required\":[\"event_id\",\"context\"]}},\"required\":[\"nonce\",\"timestamp\",\"token\",\"data\"]}"
         println(JsonObject(str))
     }
 
@@ -362,9 +365,9 @@ class KotlinTest {
 
         val data = "ASDFASDFASDFA\n" +
                 "http://127.0.0.1/app.html?platform=crm&account=zpj-kf-02&ip=127.0.0.1:8081&developer=0"
-        println(String(Base64(true).encode(data.toByteArray()),Charset.forName("UTF-8")))
+        println(String(Base64(true).encode(data.toByteArray()), Charset.forName("UTF-8")))
         println(String(Base64(false).encode(data.toByteArray())))
-        println(String(Base64.encodeBase64(data.toByteArray()),Charset.forName("UTF-8")))
+        println(String(Base64.encodeBase64(data.toByteArray()), Charset.forName("UTF-8")))
     }
 
     @Test
@@ -397,7 +400,7 @@ class KotlinTest {
         f1.complete(2)
         f2.complete(10)
 
-        CompositeFuture.all(f1,f2).setHandler {
+        CompositeFuture.all(f1, f2).setHandler {
             println(it.succeeded())
             println(it.result())
         }
@@ -407,8 +410,8 @@ class KotlinTest {
 
 
     @Test
-    fun testRxJava(){
-        Observable.from( 0 until  100).map {
+    fun testRxJava() {
+        Observable.from(0 until 100).map {
             println(it)
             it
         }.toList().map {
@@ -417,4 +420,76 @@ class KotlinTest {
 
                 .subscribe()
     }
+
+
+    @Test
+    fun testFutureMap() {
+        val future = Future.future<Int>()
+        future.map {
+            println("---$it")
+            2
+        }
+
+        /*
+future.setHandler{
+    println("---handler${it.result()}")
+}*/
+        future.complete(100)
+        future.map {
+            println("=====$it")
+//            10
+        }
+        future.map {
+            println("===asd==$it")
+            20
+        }
+        Thread.sleep(2000)
+//        print(future.result())
+//        print(future.result())
+    }
+
+    @Test
+    fun testHandleToRxJava() {
+
+        val rx = Observable.unsafeCreate<Int> { subscriber ->
+            val handler = Handler<Int> {
+                println("handle--->" + it)
+                subscriber.onNext(100)
+                subscriber.onCompleted()
+            }
+            handler.handle(10)
+        }.flatMap {
+            println("map1--->" + it)
+            Observable.just(200)
+        }
+        rx.map {
+            println("map2--->" + it)
+            300
+        }
+        rx.subscribe({
+            println("end -->$it")
+        }, {
+            it.printStackTrace()
+        })
+
+        Thread.sleep(1000)
+    }
+
+    @Test
+    fun testUTcTime(){
+        val nowTime = LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
+        println(nowTime)
+        println(LocalDateTime.now().toInstant(ZoneOffset.ofHours(0)).toEpochMilli())
+
+        println( LocalDateTime.now().toInstant(ZoneOffset.of("+8")).toEpochMilli())
+
+        println(LocalDateTime.now().atZone(ZoneOffset.UTC).toInstant().toEpochMilli())
+        val now = LocalDateTime.now(ZoneOffset.UTC)
+        println(now.atZone(ZoneOffset.UTC)?.toInstant()?.toEpochMilli())
+        val  cal = Calendar.getInstance();
+        println(cal.getTimeInMillis())
+        println(System.currentTimeMillis())
+
+    }
+
 }
