@@ -1,4 +1,4 @@
-package com.perkins.baseTest;
+package com.perkins.basetest;
 
 import com.perkins.util.Base64Utils;
 import org.apache.commons.codec.binary.Base64;
