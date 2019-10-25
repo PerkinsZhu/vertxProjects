@@ -11,6 +11,7 @@ import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.apache.commons.codec.binary.Base64
 import org.junit.Test
+import org.slf4j.LoggerFactory
 import org.springframework.util.DigestUtils
 import rx.Observable
 import rx.Single
@@ -492,12 +493,20 @@ future.setHandler{
 
     }
 
+    val logger = LoggerFactory.getLogger(this.javaClass)
     @Test
     fun testObserver() {
-        Observable.from(0 until 100).flatMap {
-            Single.just(it).map {
-                println(it)
-            }.toObservable()
-        }.toList().subscribe()
+        Single.just(10).flatMap { m ->
+            Observable.from(0 until m).flatMap { i ->
+                logger.info("----$i")
+                Single.just(i).map {
+                    Thread.sleep(1000)
+                    logger.info("===$it")
+                }.toObservable()
+            }.toList().toSingle()
+        }.subscribe()
+
     }
+
+
 }
