@@ -27,6 +27,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import kotlin.collections.ArrayList
 import kotlin.streams.toList
 
 
@@ -328,8 +329,8 @@ class KotlinTest {
     @Test
     fun testMD5() {
 //        val id = "zpj-urge-03-1"
-        val id = "temp-user-02"
-//        val id = "temp-user-01"
+//        val id = "user_id-02"
+        val id = "temp-user-10"
         val res = DigestUtils.md5DigestAsHex(id.toByteArray()).substring(8, 24)
         println(res)
     }
@@ -507,6 +508,14 @@ future.setHandler{
         }.subscribe()
 
     }
+
+
+    @Test
+    fun testSlice() {
+        val a = mutableListOf(1, 2, 3, 4)
+        println(a.slice((0 until 4)))
+    }
+
 
 
 }
