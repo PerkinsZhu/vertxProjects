@@ -508,9 +508,9 @@ class RXTest {
     }
 
     @Test
-    fun testException(){
+    fun testException() {
         Single.just(10).map {
-            10 /0
+            10 / 0
         }.doOnError {
             println("========")
             it.printStackTrace()
@@ -518,14 +518,14 @@ class RXTest {
         }.map {
             print(it)
             it
-        }.subscribe({},{
+        }.subscribe({}, {
             println("----")
             it.printStackTrace()
         })
     }
 
     @Test
-    fun testIntDefault(){
+    fun testIntDefault() {
 //        var a:Int
 //        showInt(12)
         var list: List<Long> = listOf()
@@ -534,9 +534,67 @@ class RXTest {
 
     }
 
-    fun showInt(a:Int){
+    fun showInt(a: Int) {
         println(a)
     }
+
+    @Test
+    fun testZip5() {
+        val list = (0 until 10).toList().map {
+            Single.just(it).map {
+                println("map-$it---"+Thread.currentThread().name)
+                it
+            }
+        }
+
+        val s1 = Single.just(1).map {
+            println("map1---"+Thread.currentThread().name)
+            2
+        }
+        val s2 = Single.just(1).observeOn(Schedulers.newThread()).map {
+            println("map2---"+Thread.currentThread().name)
+            2
+        }
+
+  /*      Single.zip(s1,s2){ i: Int, i1: Int ->
+            println("zip--" + Thread.currentThread().name)
+        }.subscribe {
+            println("sub--" + Thread.currentThread().name)
+        }*/
+
+        Single.zip(list){
+            it.forEach{ any ->
+                println(any.javaClass)
+                println(any)
+            }
+        }.subscribe {
+            println("sub--" + Thread.currentThread().name)
+        }
+        Thread.sleep(1000)
+    }
+
+
+    @Test
+    fun testThread044(){
+       Single.just(1).map{
+            println(Thread.currentThread().name)
+            it
+        }.observeOn(Schedulers.computation()).map {
+            println(Thread.currentThread().name)
+            it
+        }.observeOn(Schedulers.io()).map {
+            println(Thread.currentThread().name)
+            it
+        }.observeOn(Schedulers.newThread()).map {
+//           Schedulers.reset()
+           println(Thread.currentThread().name)
+           it
+       }.subscribe{
+            println(Thread.currentThread().name)
+        }
+        Thread.sleep(1000)
+    }
+
 }
 
 interface OnBind {

@@ -26,7 +26,7 @@
     }
 
     function sendMsg() {
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 1; i++) {
             var str = " i am " + i
             console.log("send -->" + str)
             eb.send("messageMissing", str, function (obj, json) {

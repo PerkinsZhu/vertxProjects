@@ -69,8 +69,8 @@ class EventBusVerticle : AbstractVerticle() {
 
         val options = HttpServerOptions()
         // 设置每次http请求长度最大值，该设置会影响整个服务
-//        options.maxWebsocketFrameSize = 1024 * 1024 * 5
-//        options.maxWebsocketMessageSize = 1024 *1024 * 10
+        options.maxWebsocketFrameSize = 1024 * 1024 * 5
+        options.maxWebsocketMessageSize = 1024 *1024 * 10
 
         vertx.createHttpServer(options).requestHandler { router.accept(it) }.listen(8081)
 

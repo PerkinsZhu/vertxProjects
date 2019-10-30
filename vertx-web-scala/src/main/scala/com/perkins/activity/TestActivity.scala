@@ -4,6 +4,7 @@ import java.io.File
 import java.util
 import java.util.{HashMap, Map}
 
+import com.perkins.BaseTest
 import com.perkins.activity.service.AuthService
 
 import scala.collection.JavaConverters._
@@ -531,6 +532,11 @@ class TestActivity {
   }
 
 
+  @Test
+  def testArgs(): Unit ={
+    val args = List("1", "2", "3")
+    new BaseTest().testArgs(args: _*)
+  }
 
 
 

@@ -130,6 +130,8 @@ dependencies {
     compile "com.google.dagger:dagger:2.10"
     kapt "com.google.dagger:dagger-compiler:2.10"
 
+    compile "org.mongodb:mongodb-crypt:1.0.0-beta4"
+
 }
 
 dependencyManagement {
