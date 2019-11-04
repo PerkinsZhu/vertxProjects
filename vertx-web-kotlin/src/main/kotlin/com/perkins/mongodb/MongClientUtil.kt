@@ -7,5 +7,13 @@ import io.vertx.ext.mongo.MongoClient
 object MongClientUtil {
     val vertx = Vertx.vertx()
     val config = JsonObject().put("connection_string", "mongodb://localhost:27017/test") //该配置项会忽略其他所有的配置项
-    val client = MongoClient.createShared(vertx, config, "MyPoolName")
+    val client = lazy { MongoClient.createShared(vertx, config, "MyPoolName") }
+
+
+    fun getRxClient(): io.vertx.rxjava.ext.mongo.MongoClient {
+        val vertx = io.vertx.rxjava.core.Vertx.vertx()
+        val config = JsonObject().put("connection_string", "mongodb://1234:1234123@192.168.1.1:27017/work_order") //该配置项会忽略其他所有的配置项
+        return io.vertx.rxjava.ext.mongo.MongoClient.createShared(vertx, config, "MyPoolName")
+    }
+
 }

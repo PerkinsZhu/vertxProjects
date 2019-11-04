@@ -76,6 +76,7 @@ dependencies {
     kapt "io.vertx:vertx-codegen:$vertx_version:processor"
     compile "io.vertx:vertx-service-proxy:$vertx_version"
     compile "io.vertx:vertx-service-proxy:$vertx_version:processor"
+    compile "io.vertx:vertx-lang-kotlin:$vertx_version"
 
 
 

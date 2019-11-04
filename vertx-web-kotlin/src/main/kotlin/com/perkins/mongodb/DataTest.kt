@@ -1,18 +1,12 @@
 package com.perkins.mongodb
 
 import io.vertx.core.json.JsonObject
-import io.vertx.ext.mongo.BulkWriteOptions
-import io.vertx.kotlin.ext.mongo.BulkOperation
+import io.vertx.ext.mongo.BulkOperation
 import io.vertx.kotlin.ext.mongo.FindOptions
 import io.vertx.rxjava.core.Vertx
 import io.vertx.rxjava.ext.mongo.MongoClient
-import org.bson.types.ObjectId
-import rx.Single
-import io.vertx.ext.mongo.BulkOperation
 import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Schedules
-import rx.Scheduler
-import rx.schedulers.Schedulers
+import rx.Single
 import kotlin.streams.toList
 
 

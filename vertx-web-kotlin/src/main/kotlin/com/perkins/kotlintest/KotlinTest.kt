@@ -3,12 +3,17 @@ package com.perkins.kotlintest
 import com.hazelcast.client.impl.protocol.codec.AtomicReferenceIsNullCodec
 import com.perkins.bean.User
 import com.perkins.common.PropertiesUtil
+import com.perkins.mongodb.MongClientUtil
 import com.perkins.util.DESUtils
 import io.vertx.core.CompositeFuture
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
+import io.vertx.kotlin.core.json.json
+import io.vertx.kotlin.core.json.obj
+import io.vertx.kotlin.ext.mongo.FindOptions
+import io.vertx.rxjava.core.Vertx
 import org.apache.commons.codec.binary.Base64
 import org.junit.Test
 import org.slf4j.LoggerFactory
@@ -16,6 +21,7 @@ import org.springframework.util.DigestUtils
 import rx.Observable
 import rx.Single
 import rx.plugins.RxJavaCompletableExecutionHook
+import rx.schedulers.Schedulers
 import sun.misc.BASE64Encoder
 import java.lang.RuntimeException
 import java.nio.charset.Charset
@@ -24,6 +30,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.*
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -497,15 +504,25 @@ future.setHandler{
     val logger = LoggerFactory.getLogger(this.javaClass)
     @Test
     fun testObserver() {
-        Single.just(10).flatMap { m ->
-            Observable.from(0 until m).flatMap { i ->
-                logger.info("----$i")
-                Single.just(i).map {
-                    Thread.sleep(1000)
-                    logger.info("===$it")
-                }.toObservable()
-            }.toList().toSingle()
-        }.subscribe()
+        val client = MongClientUtil.getRxClient()
+        val test = (0 until 10).map { idx ->
+            val op = FindOptions()
+            op.limit = 10
+            println("=========")
+            client.rxFindWithOptions("event", JsonObject(), op).map {
+                println(idx);
+                println(it.size);
+
+            }.toObservable()
+        }
+        Observable.concat(test).toList().subscribe {
+            println("======end===")
+        }
+        try {
+            Thread.sleep(50000)
+        } catch (e: Exception) {
+
+        }
 
     }
 
@@ -517,5 +534,81 @@ future.setHandler{
     }
 
 
+    @Test
+    fun testJson1() {
+        println(json { obj("a" to 1) })
+        println(json { obj("a" to 1, "b" to 1) })
+        println(json { obj("a" to 1, "b" to 1) })
+    }
+
+
+    fun shwoInfo() = println(12)
+
+    @Test
+    fun testTimer() {
+        val timer = Observable.timer(1, TimeUnit.SECONDS)
+        timer.map {
+            shwoInfo()
+        }.subscribe {
+            testTimer()
+        }
+        Thread.sleep(20000)
+    }
+
+
+    @Test
+    fun testSharedData() {
+        val vertx = Vertx.vertx()
+        vertx.sharedData().rxGetAsyncMap<String, Long>("data").flatMap { map ->
+            map.rxGet("aa").map { v ->
+                println("----->$v")
+            }
+        }.subscribe({
+            println("===end")
+        }, {
+            it.printStackTrace()
+        })
+
+    }
+
+    @Test
+    fun testSubscribe() {
+        Single.just(1).map {
+            println(1)
+        }.map {
+            println(2)
+        }.doOnSubscribe {
+            println("ONsubs")
+        }.doOnUnsubscribe {
+            println("ON UN subs")
+        }.subscribe {
+            println("subs")
+        }
+
+
+        Thread.sleep(20000)
+    }
+
+    @Test
+    fun testObserable() {
+        Single.just(1).map {
+            logger.info("---1---")
+        }.map {
+            logger.info("---2---")
+        }
+
+                .observeOn(Schedulers.io())
+                .map {
+                    logger.info("---3---")
+                }.map {
+                    logger.info("---4---")
+                }
+                .observeOn(Schedulers.computation())
+                .map {
+                    logger.info("---5---")
+                }.subscribe()
+
+        Thread.sleep(2000)
+    }
 
 }
