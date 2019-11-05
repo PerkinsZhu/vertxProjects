@@ -6,7 +6,10 @@ class ExtendTest {
 
     interface B {
     }
-
     class C extends A implements B {
+    }
+
+    public String AAA(String a, int b) {
+        return "aaa";
     }
 }

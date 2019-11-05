@@ -611,4 +611,59 @@ future.setHandler{
         Thread.sleep(2000)
     }
 
+    @Test
+    fun testFunction() {
+        f1(::f2)
+        f1(f3)
+        f1(f4)
+        f1(f5())
+        f1(f6())
+        println("aBc12c".filter { it in 'a'..'z' })
+        println(z(2))
+        println(z)
+        println(h(2))
+        println(h)
+    }
+
+    fun f2(a: String): Boolean = a.length > 2
+    var f3: (s: String) -> Boolean = { it.length > 2 }
+    var f31: (String) -> Boolean = { it.length > 2 }
+    val f4: (s: String) -> Boolean = { it.length > 2 }
+    fun f5(): (s: String) -> Boolean = { it.length > 2 }
+    fun f6(): (s: String) -> Boolean {
+        return { it.length > 2 }
+    }
+
+    val sum = { x: Int, y: Int -> x + y }
+    val action = { println(42) }
+    val sum1: (Int, Int) -> Int = { x, y -> x + y }
+    val sum2: (Int, Int) -> Int = { x, y ->
+        x + y
+    }
+    val action1: () -> Unit = { println(42) }
+
+    fun f1(a: (String) -> Boolean) {
+        val a = mutableListOf("aa", "bbb", "c").filter { a(it) }
+        println(a)
+    }
+
+    private fun String.filter(predicate: (Char) -> Boolean): String {
+        val sb = StringBuilder()
+        for (index in 0 until length) {
+            val element = get(index)
+            if (predicate(element)) sb.append(element)
+        }
+        return sb.toString()
+    }
+
+    fun f(x: Int) = x + 10
+    val g = fun(x: Int) = x * 10
+    val z = g andThen ::f // f is a member function
+    val h = A().g andThen A()::f
+
+}
+
+class A {
+    fun f(x: Int) = x + 10
+    val g = fun(x: Int) = x * 10
 }

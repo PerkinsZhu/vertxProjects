@@ -22,7 +22,7 @@ class PressureTest {
             logger.info("count:$it")
             val option = FindOptions()
             option.batchSize = 10000
-            client.rxFindWithOptions(table, query,option).map { list ->
+            client.rxFindWithOptions(table, query, option).map { list ->
                 logger.info("data size:${list.size}")
                 1
             }
@@ -30,11 +30,19 @@ class PressureTest {
             countDownLatch.countDown()
         }
 
-
-
         countDownLatch.await()
         logger.info("====end====")
     }
 
+    /**
+     *
+     * @param a
+	 * @param b
+     * @author Perkins Zhu
+     * @date 2019/11/5 16:15
+     */
+    fun a(a: String, b: Int): Int {
+        return 2;
+    }
 
 }
