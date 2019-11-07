@@ -132,6 +132,12 @@ dependencies {
     kapt "com.google.dagger:dagger-compiler:2.10"
 
     compile "org.mongodb:mongodb-crypt:1.0.0-beta4"
+    // https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-core
+    compile group: 'org.mongodb', name: 'mongodb-driver-core', version: '3.11.2'
+    // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
+    compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.11.2'
+
+
 
 }
 
