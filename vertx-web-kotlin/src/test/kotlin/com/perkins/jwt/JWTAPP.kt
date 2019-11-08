@@ -71,7 +71,7 @@ class JWTAPP {
         val strategy = DefaultHashStrategy()
         strategy.saltStyle = HashSaltStyle.NO_SALT  // 这里设置密码不加密，也可以设置其他加密方式
 
-        val authProvider = MongoAuth.create(client, authProperties)
+        val authProvider = MongoAuth.create(client.value, authProperties)
                 .setCollectionName("user") //设置collection
                 .setUsernameField("username") // 设置用户名字段
                 .setPasswordField("password") //设置密码字段

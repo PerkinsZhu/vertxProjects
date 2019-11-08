@@ -34,15 +34,14 @@ class PressureTest {
         logger.info("====end====")
     }
 
-    /**
-     *
-     * @param a
-	 * @param b
-     * @author Perkins Zhu
-     * @date 2019/11/5 16:15
-     */
-    fun a(a: String, b: Int): Int {
-        return 2;
+    @Test
+    fun manyClient() {
+        repeat(100){
+            val client = MongClientUtil.getClient()
+            logger.info("$it --->$client")
+            client.count("event",JsonObject()){
+                logger.info("--count:$it")
+            }
+        }
     }
-
 }

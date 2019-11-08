@@ -16,4 +16,12 @@ object MongClientUtil {
         return io.vertx.rxjava.ext.mongo.MongoClient.createShared(vertx, config, "MyPoolName")
     }
 
+    fun getClient():MongoClient {
+        val vertx =Vertx.vertx()
+//        waitQueue = waitQueueMultiple * maxPoolSize
+//        如何未设置waitQueueMultiple，则 waitQueue = 500
+        val config = JsonObject().put("connection_string", "mongodb://1234:1234123@192.168.1.1:27017/work_order?maxPoolSize=800&waitQueueMultiple=3") //该配置项会忽略其他所有的配置项
+        return MongoClient.createShared(vertx, config, "MyPoolName")
+    }
+
 }
