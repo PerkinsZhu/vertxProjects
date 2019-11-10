@@ -18,3 +18,5 @@ target/
 *.bat
 gradle-*
 gradlew
+file-uploads
+uploads
