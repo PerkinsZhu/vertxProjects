@@ -1,6 +1,10 @@
 package com.perkins.arrow
 
 import arrow.Kind
+import arrow.core.Option
+import arrow.core.Try
+import arrow.core.extensions.fx
+import arrow.extension
 import arrow.fx.IO
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.concurrent.concurrent
@@ -8,10 +12,16 @@ import arrow.fx.extensions.io.unsafeRun.runBlocking
 import arrow.fx.extensions.io.unsafeRun.unsafeRun
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.UnsafeRun
+import arrow.typeclasses.Eq
 import arrow.unsafe
 import com.perkins.AbstractApp
 import kotlinx.coroutines.*
 import org.junit.Test
+import arrow.core.extensions.option.apply.map
+import arrow.core.extensions.list.traverse.sequence
+import arrow.core.extensions.option.applicative.applicative
+import arrow.core.extensions.`try`.apply.map
+
 
 class ArrowApp : AbstractApp() {
     @Test
@@ -64,10 +74,11 @@ class ArrowApp : AbstractApp() {
     val contextA = newSingleThreadContext("A")
 
     suspend fun printThreadName(): Unit =
-            println(Thread.currentThread().name)
+            logger.info(Thread.currentThread().name)
 
     val program = IO.fx {
-        continueOn(contextA)
+        logger.info("------")
+        continueOn(contextA) // 执行执行的线程
         !effect { printThreadName() }
         continueOn(dispatchers().default())
         !effect { printThreadName() }
@@ -188,4 +199,48 @@ class ArrowApp : AbstractApp() {
         IO.unsafeRun().main(IO.concurrent())
     }
 
+
+    @Test
+    fun testOption() {
+        val option = Option.fx {
+            val (a) = Option(1)
+            val (b) = Option(a + 1)
+            a + b
+        }
+        logger.info(option.toString())
+        val map = map(Option(1), Option(2), Option(3)) { (one, two, three) ->
+            one + two + three
+        }
+        logger.info(map.toString())
+        val seq = listOf(Option(1), Option(2), Option(3)).sequence(Option.applicative())
+        logger.info(seq.toString())
+
+        val tryTest = Try.fx {
+            val (a) = Try { 1 }
+            val (b) = Try { a + 1 }
+            a + b
+        }
+        logger.info(tryTest.toString())
+
+        val tryMap = map(Try { 1 }, Try { 2 }, Try { 3 }) { (one, two, three) ->
+            one + two + three
+        }
+
+        logger.info(tryMap.toString())
+    }
+
 }
+
+data class User(val id: Int) {
+    companion object
+}
+
+@extension
+interface UserEq : Eq<User> {
+    override fun User.eqv(b: User): Boolean = id == b.id
+}
+class ForOption private constructor() { companion object {} }
+sealed class Option<A>: Kind<ForOption, A>
+
+class ForListK private constructor() { companion object {} }
+data class ListK<A>(val list: List<A>): Kind<ForListK, A>
