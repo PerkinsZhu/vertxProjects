@@ -9,6 +9,13 @@ version '1.0-SNAPSHOT'
 sourceCompatibility = 1.8
 
 repositories {
+    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+    maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
+    mavenCentral()
+    jcenter()
+    maven {
+        url "https://oss.sonatype.org/content/repositories/3963/"
+    }
     mavenCentral()
     jcenter()
     maven { url "https://dl.bintray.com/arrow-kt/arrow-kt/" }
@@ -34,6 +41,10 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
     compile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+
+// EXCEL 解析
+    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '4.1.1'
+    implementation group: 'org.apache.poi', name: 'poi', version: '4.1.1'
 
 
 }

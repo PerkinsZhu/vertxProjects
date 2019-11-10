@@ -24,7 +24,7 @@ import rx.Observable
 import rx.Single
 import rx.plugins.RxJavaCompletableExecutionHook
 import rx.schedulers.Schedulers
-import sun.misc.BASE64Encoder
+//import sun.misc.BASE64Encoder
 import java.lang.RuntimeException
 import java.nio.charset.Charset
 import java.security.SecureRandom
@@ -156,8 +156,8 @@ class KotlinTest {
     fun createSalt() { // 创建随机盐值
         val byteArray = ByteArray(16)
         SecureRandom().nextBytes(byteArray)
-        val salt = BASE64Encoder().encode(byteArray)
-        println(salt)
+       /* val salt = BASE64Encoder().encode(byteArray)
+        println(salt)*/
     }
 
     @Test
