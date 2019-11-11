@@ -35,7 +35,7 @@ class OrignBean constructor(
             val excelTool = ExcelTool()
             val getValue: (String) -> String? = { str ->
                 keyMap?.get(str)?.let { index ->
-                    excelTool.getOrNull(row?.getCell(index))?.toString()
+                    excelTool.getOrNull(row?.getCell(index))?.toString()?.replace("\r\n","")?.replace("\n","")
                 }
             }
             return if (row == null || keyMap == null) {

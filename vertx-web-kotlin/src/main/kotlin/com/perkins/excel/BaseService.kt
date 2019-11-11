@@ -39,7 +39,7 @@ open class BaseService {
     private fun getKeyMap(titleRow: Row?): Map<String, Int>? {
         return titleRow?.let { row ->
             row.mapIndexed { index, cell ->
-                Pair(cell.stringCellValue, index)
+                Pair(cell.stringCellValue.replace("\r\n", "").replace("\n", ""), index)
             }.associate {
                 it
             }

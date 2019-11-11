@@ -15,8 +15,6 @@ class VacationBean constructor(
         val remarks: String? = null, //备注
         val cause: String? = null //事由
 ) {
-
-
     companion object {
         val noStr = "序号" //序号
         val departmentStr = "部门"//部门
@@ -33,10 +31,7 @@ class VacationBean constructor(
             val excelTool = ExcelTool()
             val getValue: (String) -> String? = { str ->
                 keyMap?.get(str)?.let { index ->
-                    if(str == startTimeStrStr){
-                        println("000")
-                    }
-                    excelTool.getOrNull(row?.getCell(index))?.toString()
+                    excelTool.getOrNull(row?.getCell(index))?.toString()?.replace("\r\n", "")?.replace("\n", "")
                 }
             }
             return if (row == null || keyMap == null) {

@@ -76,6 +76,7 @@ class ExcelTool {
                     }
                     value
                 }
+                CellType.FORMULA ->ce.cellFormula
                 else -> {
                     logger.info("未知单元格类型：${ce.cellType}")
                     ce.toString()
@@ -83,5 +84,4 @@ class ExcelTool {
             }
         }
     }
-
 }
