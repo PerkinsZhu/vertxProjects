@@ -1,15 +1,15 @@
 package com.perkins.excel
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
-import org.apache.poi.ss.usermodel.Cell
-import org.apache.poi.ss.usermodel.CellType
-import org.apache.poi.ss.usermodel.DateUtil
-import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.slf4j.LoggerFactory
 import java.io.*
 import java.text.SimpleDateFormat
 import java.text.DecimalFormat
+import org.apache.poi.hssf.util.HSSFColor
+import org.apache.poi.ss.usermodel.*
+import org.apache.poi.xssf.usermodel.XSSFColor
+
 
 class ExcelTool {
 
@@ -71,15 +71,58 @@ class ExcelTool {
                 CellType.NUMERIC -> {
                     val value = when {
                         DateUtil.isCellDateFormatted(cell) -> sdf.format(cell.dateCellValue)
+                        cell.cellStyle.dataFormat.toInt() == 57 -> sdf.format(cell.dateCellValue)
+                        cell.cellStyle.dataFormat.toInt() == 58 -> sdf.format(cell.dateCellValue)
                         "General" == cell.cellStyle.dataFormatString -> df.format(cell.numericCellValue)
-                        else -> cell.richStringCellValue.string
+                        else -> cell.numericCellValue
                     }
                     value
                 }
-                CellType.FORMULA ->ce.cellFormula
+                CellType.FORMULA -> ce.cellFormula
                 else -> {
                     logger.info("未知单元格类型：${ce.cellType}")
                     ce.toString()
+                }
+            }
+        }
+    }
+
+    fun save(newPath: String, workbook: Workbook?) {
+        val file = File(newPath)
+        if (!file.parentFile.exists()) {
+            file.parentFile.mkdirs()
+        } else {
+            if (file.exists()) {
+                file.delete()
+            }
+        }
+        file.createNewFile()
+        var outputStream: FileOutputStream? = null
+        try {
+            outputStream = FileOutputStream(file);
+            workbook?.write(outputStream)
+        } finally {
+            outputStream?.close()
+            workbook?.close()
+        }
+
+    }
+
+    val getTextValue: (String, Map<String, Int>?, Row?) -> String? = { str, keyMap, row ->
+        keyMap?.get(str)?.let { index ->
+            getOrNull(row?.getCell(index))?.toString()?.replace("\r\n", "")?.replace("\n", "")?.replace(" ", "")
+        }
+    }
+    // 获取表格颜色值
+    val getColorValue: (String, Map<String, Int>?, Row?) -> String? = { str, keyMap, row ->
+        keyMap?.get(str)?.let { index ->
+            row?.getCell(index)?.cellStyle?.let { style ->
+                style.fillForegroundColorColor?.let { color ->
+                    when (color) {
+                        is XSSFColor -> color.argbHex
+                        is HSSFColor -> color.hexString
+                        else -> "FFFFFFFF"
+                    }
                 }
             }
         }

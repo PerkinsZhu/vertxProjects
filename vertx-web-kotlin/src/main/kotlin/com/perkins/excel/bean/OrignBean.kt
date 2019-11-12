@@ -1,7 +1,10 @@
 package com.perkins.excel.bean
 
+import com.perkins.common.PropertiesUtil
 import com.perkins.excel.ExcelTool
 import org.apache.poi.ss.usermodel.Row
+import java.text.SimpleDateFormat
+import java.util.*
 
 class OrignBean constructor(
         var attendanceNumber: String? = null, //考勤号码
@@ -31,20 +34,18 @@ class OrignBean constructor(
         val departmentStr = "部门"
         val floorStr = "楼层"
 
+        val legalHolidays = PropertiesUtil.get("legalHolidays").split(";")
+
         fun fromRow(row: Row?, keyMap: Map<String, Int>?): OrignBean? {
             val excelTool = ExcelTool()
-            val getValue: (String) -> String? = { str ->
-                keyMap?.get(str)?.let { index ->
-                    excelTool.getOrNull(row?.getCell(index))?.toString()?.replace("\r\n","")?.replace("\n","")
-                }
-            }
+            val getValue: (String) -> String? = { excelTool.getTextValue(it, keyMap, row) }
             return if (row == null || keyMap == null) {
                 null
             } else {
                 OrignBean(
                         getValue(attendanceNumberStr),
                         getValue(nameStr),
-                        getValue(dateStrStr),
+                        formatDateStr(getValue(dateStrStr)),
                         getValue(timeIntervalStr),
                         getValue(workStartTimeStr),
                         getValue(workEndTimeStr),
@@ -57,9 +58,76 @@ class OrignBean constructor(
 
             }
         }
+
+        private fun formatDateStr(value: String?): String? {
+            return value?.let { str ->
+                val year = str.substringBefore("/")
+                val month = str.substringAfter("/").substringBefore("/")
+                val day = str.substringAfterLast("/")
+                return "$year/" + (if (month.length == 1) {
+                    "0$month"
+                } else {
+                    month
+                }) + "/" + (if (day.length == 1) {
+                    "0$day"
+                } else {
+                    day
+                })
+            }
+        }
     }
 
     override fun toString(): String {
         return "OrignBean(attendanceNumber=$attendanceNumber, name=$name, dateStr=$dateStr, timeInterval=$timeInterval, workStartTime=$workStartTime, workEndTime=$workEndTime, signInTime=$signInTime, signOutTime=$signOutTime, attendanceTime=$attendanceTime, department=$department, floor=$floor)"
+    }
+
+    val dataFormat = SimpleDateFormat("yyyy/MM/dd HH:mm")
+    val sdf = SimpleDateFormat("yyyy/MM/dd")
+
+    fun isLateOrEarly(): Boolean {
+        // 10:00之后上班为迟到
+        // 18:00之前下班为早退
+        return !isWeekend() && this.signInTime?.let { it.maxThan("10:00") } == true || this.signOutTime?.let { !(it.maxThan("18:00") && it != "18:00") } == true
+    }
+
+    //是否为晚归
+    fun isLateReturn(): Boolean {
+        //TODO 周末要考虑晚归吗？
+        return this.signOutTime?.maxThan("22:00") ?: false
+    }
+
+    //时间比较大小
+    private fun String.maxThan(aim: String): Boolean {
+        return this.let {
+            if (it.isNullOrBlank()) {
+                false
+            } else {
+                val c1 = Calendar.getInstance()
+                c1.time = dataFormat.parse("2019/09/02 $it")
+                val c2 = Calendar.getInstance()
+                c2.time = dataFormat.parse("2019/09/02 $aim")
+                c1 > c2
+            }
+        }
+    }
+
+    //是否是周末
+    fun isWeekend(): Boolean {
+        return this.dateStr?.let {
+            val calendar = Calendar.getInstance()
+            calendar.time = sdf.parse(it)
+            (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
+        } == true
+    }
+
+    fun isWeekendOvertime(): Boolean {
+        //FIXME 什么情况下算是周末加班？只要有打卡记录就算是吗？
+        return isWeekend() && false
+    }
+
+    //是否为法定节假日
+    fun isLegalHolidays(): Boolean {
+        //FIXME 什么情况才算是法定节假日加班？
+        return legalHolidays.contains(this.dateStr) && false
     }
 }

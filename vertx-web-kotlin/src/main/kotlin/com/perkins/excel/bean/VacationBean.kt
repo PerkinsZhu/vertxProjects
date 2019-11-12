@@ -1,7 +1,10 @@
 package com.perkins.excel.bean
 
 import com.perkins.excel.ExcelTool
+import com.sun.org.apache.xpath.internal.operations.Bool
+import org.apache.poi.ss.formula.IStabilityClassifier
 import org.apache.poi.ss.usermodel.Row
+import java.text.SimpleDateFormat
 
 class VacationBean constructor(
         val no: String? = null, //序号
@@ -27,13 +30,10 @@ class VacationBean constructor(
         val remarksStr = "备注"//备注
         val causeStr = "事由"//事由
 
+        var sdf = SimpleDateFormat("yyyy/MM/dd HH:mm")//日期格式化
         fun fromRow(row: Row?, keyMap: Map<String, Int>?): VacationBean? {
             val excelTool = ExcelTool()
-            val getValue: (String) -> String? = { str ->
-                keyMap?.get(str)?.let { index ->
-                    excelTool.getOrNull(row?.getCell(index))?.toString()?.replace("\r\n", "")?.replace("\n", "")
-                }
-            }
+            val getValue: (String) -> String? = { excelTool.getTextValue(it, keyMap, row) }
             return if (row == null || keyMap == null) {
                 null
             } else {
@@ -56,6 +56,47 @@ class VacationBean constructor(
 
     override fun toString(): String {
         return "VacationBean(no=$no, department=$department, name=$name, startTimeStr=$startTimeStr, endTimeStr=$endTimeStr, count=$count, type=$type, prove=$prove, remarks=$remarks, cause=$cause)"
+    }
+
+    //是否是病假
+    fun isSick(): Boolean {
+        return this.type == "病假"
+    }
+
+    //是否是事假
+    fun isThing(): Boolean {
+        return this.type == "事假"
+    }
+
+    //是否是带薪假期
+    fun isPay(): Boolean {
+        return !(isSick() || isThing())
+    }
+
+    //该时间点是否在请假范围中
+    fun isInVacation(orignData: String?): Boolean {
+        return orignData?.let {
+            sdf.parse(startTimeStr) < sdf.parse(it) && sdf.parse(it) < sdf.parse(endTimeStr)
+        } ?: false
+    }
+
+    //上午是否在请假
+    fun isForenoonVacation(orignData: String?): Boolean {
+        return isInVacation(orignData?.let { "$it 09:00" }) || isInVacation(orignData?.let { "$it 10:00" })
+    }
+
+    //FIXME 下午是否在请假
+    fun isAfternoonVacation(orignData: String?): Boolean {
+        return isInVacation(orignData?.let { "$it 17:00" }) || isInVacation(orignData?.let { "$it 18:00" })
+    }
+
+    //是否是出差
+    fun isBusinessTravel(): Boolean {
+        return this.type == "出差"
+    }
+
+    fun isOut(): Boolean {
+        return this.type == "外出"
     }
 
 }

@@ -28,6 +28,7 @@ import rx.schedulers.Schedulers
 import java.lang.RuntimeException
 import java.nio.charset.Charset
 import java.security.SecureRandom
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -126,7 +127,7 @@ class KotlinTest {
         val map = mutableMapOf<String, Any>()
         println(map.getOrDefault("a", 100))
         println(map.getOrElse("a", { 100 }))
-//        println(map.getValue("a"))
+//        println(map.getTextValue("a"))
         val a: String? = null
         map["111"] = a!!
 
@@ -677,6 +678,11 @@ future.setHandler{
         Thread.sleep(20000)
     }
 
+    @Test
+    fun testFormat() {
+        val sdf = SimpleDateFormat("yyyy/MM/DD HH:mm")
+        println(sdf.parse("2019/10/24 ").toString())
+    }
 }
 
 class A {
