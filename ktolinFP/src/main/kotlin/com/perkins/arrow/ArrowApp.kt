@@ -1,6 +1,10 @@
 package com.perkins.arrow
 
+import arrow.aql.extensions.list.union.union
+import arrow.aql.extensions.list.sum.*
+
 import arrow.Kind
+import arrow.aql.extensions.sequence.select.query
 import arrow.core.*
 import arrow.core.Option
 import arrow.core.extensions.fx
@@ -37,6 +41,27 @@ import arrow.core.extensions.option.monad.monad
 import arrow.mtl.Kleisli
 import arrow.mtl.fix
 import arrow.ui.*
+import arrow.aql.extensions.list.select.*
+import arrow.aql.extensions.list.where.where
+import arrow.aql.extensions.listk.select.select
+import arrow.aql.extensions.sequencek.select.select as ss
+import arrow.aql.extensions.list.groupBy.*
+import arrow.aql.extensions.listk.select.selectAll
+import arrow.aql.extensions.list.orderBy.*
+import arrow.aql.extensions.listk.select.select
+import arrow.core.extensions.order
+import arrow.aql.Ord
+import arrow.fx.extensions.io.applicative.applicative
+import arrow.fx.extensions.io.applicative.map
+import arrow.fx.extensions.io.applicativeError.attempt
+import arrow.fx.extensions.io.concurrent.sleep
+import arrow.fx.extensions.io.effect.runAsync
+import arrow.fx.extensions.io.monadDefer.monadDefer
+import arrow.fx.typeclasses.milliseconds
+import arrow.fx.typeclasses.seconds
+import arrow.syntax.function.pipeLazy
+import io.reactivex.rxkotlin.toObservable
+
 
 class ArrowApp : AbstractApp() {
     @Test
@@ -492,6 +517,145 @@ class ArrowApp : AbstractApp() {
         val tupleStore = store.coflatMap { it: Store<Int, String> -> Tuple2("State", it.state) }
         tupleStore.extract().let(log)
         // Tuple2(a=State, b=0)
+    }
+
+    @Test
+    fun testIO() {
+        IO<Int> { throw RuntimeException() }.attempt().unsafeRunSync().let(log)
+        IO<Int> { throw RuntimeException("Boom!") }
+                .runAsync { result ->
+                    result.fold({ IO { log("Error") } }, { IO { log(it.toString()) } })
+                }.unsafeRunSync()
+
+        IO<Int> { throw RuntimeException("Boom!") }
+                .unsafeRunAsync { result ->
+                    result.fold({ log("Error-result") }, { log(it.toString()) })
+                }
+        IO { 1 }.attempt().unsafeRunSync().let(log)
+        val cancel = IO<Int> { 23 }
+                .unsafeRunAsyncCancellable { result ->
+                    result.fold({ println("Error") }, { println(it.toString()) })
+                }
+
+        cancel()
+        IO<Int> {
+            //throw RuntimeException("Boom!")
+            IO.sleep(5000.milliseconds)
+            90
+        }.attempt().unsafeRunTimed(100.milliseconds).let { log(it) }
+        IO { 1 }.unsafeRunSync().let(log)
+        IO.just(23).unsafeRunAsync(log)
+
+        IO.effect { log("-----hello world-----") }.unsafeRunSync().let(log)
+        IO.effect { throw RuntimeException("Boom!") }.attempt().unsafeRunSync().let(log)
+
+        IO.defer { IO.just(1) }.attempt().unsafeRunSync().let(log)
+        IO.async<Int> { callback ->
+            callback(1.right())
+        }.attempt().unsafeRunSync().let(log)
+
+        IO.cancelable<String> { callback ->
+            val observable = listOf("Alpha", "Beta", "Gamma", "Delta", "Epsilon").toObservable().filter { it.length >= 5 }
+            val subscription = observable.subscribe {
+                callback(it.right())
+            }
+            IO { subscription.dispose() }
+        }.attempt().unsafeRunSync().let(log)
+
+        IO.sleep(3.seconds).flatMap { IO.effect { println("Hello World!") } }.unsafeRunSync().let { log }
+    }
+
+    data class Student(val name: String, val age: Int)
+
+    val john = Student("John", 30)
+    val jane = Student("Jane", 32)
+    val jack = Student("Jack", 32)
+    val chris = Student("Chris", 40)
+
+    @Test
+    fun testSelect() {
+        listOf(1, 2, 3).query {
+            select { this + 1 }
+        }.value().let(log)
+
+        listOf(1, 2, 3).query {
+            // `listOf(1, 2, 3)` is what the source of data and what we use as `from`
+            select { this }
+        }.value().let(log)
+
+        listOf(john, jane, jack).query {
+            select { name } where { age > 20 }
+        }.value().let(log)
+
+        listOf(john, jane, jack).query {
+            selectAll().where { age > 30 }.groupBy { this.age }.from
+        }.value().let(log)
+
+        listOf(1, 2, 3).query {
+            select { this * 10 } orderBy Ord.Asc(Int.order())
+        }.value().let(log)
+
+        listOf(john, jane, jack).query {
+            selectAll() groupBy { age } orderMap Ord.Desc(Int.order())
+        }.value().let(log)
+
+        listOf(john, jane, jack).query {
+            selectAll() where { age > 30 } sum { age.toLong() }
+        }.value().let(log)
+
+        val queryA = listOf("customer" to john, "customer" to jane).query { selectAll() }
+        val queryB = listOf("sales" to jack, "sales" to chris).query { selectAll() }
+        queryA.union(queryB).value().let(log)
+
+
+    }
+
+
+    @Test
+    fun testMonadDefer() {
+
+        val now = IO.applicative().just(println("eager side effect"))
+// Print: "eager side effect"
+
+        now.unsafeRunAsync { }
+// Nothing, the effect has run already
+
+        val later = IO.monadDefer().later { println("lazy side effect") }.attempt().run(log)
+        IO.monadDefer().defer { IO.just(1) }
+        val temp = IO.monadDefer().just("123").map {
+            log("----")
+            23
+        }
+        Thread.sleep(4000)
+        temp.unsafeRunSync().let(log)
+
+
+// Nothing, the effect is deferred until executed
+
+// Print: "lazy side effect"
+    }
+
+    @Test
+    fun  testLazy(){
+        val SC = IO.monadDefer()
+
+        val result = SC.fx.monad {
+            println("Print: now")
+            val (result) = just(1)
+            result + 1
+        }
+
+//Print: now
+
+        val lazyResult = SC.fx.monad {
+            SC.lazy().bind()
+            println("Print: lazy")
+            val (result) = IO<Int>{2}
+            result + 1
+        }
+
+//Nothing here!
+        lazyResult.map { 23 }.unsafeRunSync().run(log)
     }
 
 }
