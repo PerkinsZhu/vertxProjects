@@ -87,3 +87,11 @@ idea {
                 'build/tmp/kapt/main/kotlinGenerated')
     }
 }
+// gradle 语法学习
+//进入module目录中执行：gradle echoAll
+task echoAll() {
+    println rootProject.buildDir
+    println rootDir
+    println rootProject.rootDir
+    println "echoAll打印 完成"
+}
