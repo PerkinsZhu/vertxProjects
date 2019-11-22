@@ -11,6 +11,7 @@ sourceCompatibility = 1.8
 repositories {
     maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
     maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
+    maven { url 'https://jitpack.io' }
     mavenCentral()
     jcenter()
     maven {
@@ -24,7 +25,7 @@ repositories {
 
 apply plugin: 'kotlin-kapt'
 
-def arrow_version = "0.10.2"
+def arrow_version = "0.10.3"
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation group: 'junit', name: 'junit', version: '4.12'
@@ -55,12 +56,34 @@ dependencies {
 // EXCEL 解析
     implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '4.1.1'
     implementation group: 'org.apache.poi', name: 'poi', version: '4.1.1'
-
+    implementation("io.reactivex.rxjava2:rxkotlin:2.4.0")
 
 }
 
 kotlin {
     experimental {
         coroutines 'enable'
+    }
+}
+
+apply plugin: 'idea'
+idea {
+    module {
+        sourceDirs += files(
+                'build/generated/source/kapt/main',
+                'build/generated/source/kapt/debug',
+                'build/generated/source/kapt/release',
+                'build/generated/source/kaptKotlin/main',
+                'build/generated/source/kaptKotlin/debug',
+                'build/generated/source/kaptKotlin/release',
+                'build/tmp/kapt/main/kotlinGenerated')
+        generatedSourceDirs += files(
+                'build/generated/source/kapt/main',
+                'build/generated/source/kapt/debug',
+                'build/generated/source/kapt/release',
+                'build/generated/source/kaptKotlin/main',
+                'build/generated/source/kaptKotlin/debug',
+                'build/generated/source/kaptKotlin/release',
+                'build/tmp/kapt/main/kotlinGenerated')
     }
 }
