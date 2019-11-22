@@ -1,5 +1,6 @@
 package com.perkins.kotlintest
 
+import com.alibaba.fastjson.JSONObject
 import com.hazelcast.client.impl.protocol.codec.AtomicReferenceIsNullCodec
 import com.perkins.bean.User
 import com.perkins.common.PropertiesUtil
@@ -157,8 +158,8 @@ class KotlinTest {
     fun createSalt() { // 创建随机盐值
         val byteArray = ByteArray(16)
         SecureRandom().nextBytes(byteArray)
-       /* val salt = BASE64Encoder().encode(byteArray)
-        println(salt)*/
+        /* val salt = BASE64Encoder().encode(byteArray)
+         println(salt)*/
     }
 
     @Test
@@ -683,6 +684,60 @@ future.setHandler{
         val sdf = SimpleDateFormat("yyyy/MM/DD HH:mm")
         println(sdf.parse("2019/10/24 ").toString())
     }
+
+    data class AA(val aa: String, val name: String, val age: Int)
+
+    @Test
+    fun testJsonMd5() {
+//        val aa = AA("AAA","JACK",230)
+        val aa = ACC()
+        aa.bb = 23
+        aa.aa = "aa"
+        aa.cc = "cc"
+        val a = JsonObject.mapFrom(aa)
+        val b = JSONObject.toJSON(aa)
+        println(a)
+        println(b)
+        val cc = JsonObject().sortedBy { it.key }.map {
+            if (it.value is JsonObject || it.value is JsonArray) {
+                JsonObject().put(it.key, it.value)
+            } else {
+                JsonObject().put(it.key, it.value)
+            }
+        }.fold(JsonObject()) { a, b ->
+            a.mergeIn(b)
+        }
+        println(cc)
+/*
+        println(a)
+        println(DigestUtils.md5DigestAsHex(a.toString().toByteArray()))
+        println(b)
+        println(DigestUtils.md5DigestAsHex(b.toString().toByteArray()))
+        println(a == b)
+        println(a.equals(b))
+        println(a.toString() == b.toString())
+
+*/
+    }
+
+    @Test
+    fun testSingle(){
+        Single.just(12).map {
+            45 /0
+        }
+                .doOnError {
+            println("asdf")
+        }
+                .onErrorReturn {
+                    println("2222")
+            234
+        }.subscribe({
+                    println("------")
+                },{
+            println("0000")
+        })
+    }
+
 }
 
 class A {

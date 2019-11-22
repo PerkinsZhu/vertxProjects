@@ -20,7 +20,7 @@ class MainAPP : BaseService() {
     val scheduleService = ScheduleService()
     @Test
     fun main() {
-        val file = File(aimPath)
+//        val file = File(aimPath)
         //orignService.loadFile(file).forEach { log(it.toString()) }
         //vacationService.loadFile(file).forEach { log(it.toString()) }
 //        val list = aimService.loadFile(file)
