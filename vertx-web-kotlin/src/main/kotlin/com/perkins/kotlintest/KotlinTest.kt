@@ -738,6 +738,11 @@ future.setHandler{
         })
     }
 
+    @Test
+    fun testJsonGetNull(){
+        println(JsonObject().remove("sign"))
+    }
+
 }
 
 class A {

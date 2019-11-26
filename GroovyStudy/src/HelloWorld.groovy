@@ -8,10 +8,12 @@ class HelloWorld {
         a.each { i ->
             println("${i}")
         }
+        12.each {
+            println("i am $it")
+        }
         (1..10).each { i ->
             println("${i}")
         }
-
     }
     def employeename
     def student1
