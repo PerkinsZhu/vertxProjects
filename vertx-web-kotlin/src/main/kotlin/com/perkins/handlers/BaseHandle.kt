@@ -6,9 +6,12 @@ import io.vertx.core.json.JsonObject
 import io.vertx.ext.auth.jwt.JWTAuth
 import io.vertx.ext.auth.jwt.JWTOptions
 import io.vertx.ext.web.RoutingContext
+import java.io.File
+import java.nio.file.FileSystem
 import java.time.LocalDateTime
 
 object BaseHandle : AbstractHandle() {
+    val apiDataPath = "D:\\zhupingjing\\testFile\\apiData\\"
     val indexHandle = Handler<RoutingContext> {
         it.response().end("welcome")
     }
@@ -114,5 +117,27 @@ object BaseHandle : AbstractHandle() {
         user.put("name", "jack")
         it.response().end(user.toString())
     }
+
+    val query = Handler<RoutingContext> {
+        val data = getJsonData("goodQuery.json")
+        val user = JsonObject(data)
+        it.response().end(user.toString())
+    }
+
+    private fun getJsonData(fileName: String) = File("$apiDataPath/$fileName").readText(Charsets.UTF_8)
+
+    val queryMerchantOrder = Handler<RoutingContext> {
+        val data = getJsonData("queryMerchantOrder.json")
+        val list = JsonObject(data)
+        it.response().end(list.toString())
+    }
+
+
+    val base = Handler<RoutingContext> {
+        val user = JsonObject()
+        user.put("name", "jack")
+        it.response().end(user.toString())
+    }
+
 
 }

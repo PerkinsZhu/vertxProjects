@@ -339,9 +339,9 @@ class KotlinTest {
 
     @Test
     fun testMD5() {
-//        val id = "zpj-urge-03-1"
-//        val id = "user_id-02"
-        val id = "temp-user-10"
+//  val id = "zpj-urge-03-1"
+//  val id = "user_id-02"
+        val id = "zpj-massid-05"
         val res = DigestUtils.md5DigestAsHex(id.toByteArray()).substring(8, 24)
         println(res)
     }

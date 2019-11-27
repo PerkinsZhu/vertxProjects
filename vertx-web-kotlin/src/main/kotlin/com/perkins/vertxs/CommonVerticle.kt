@@ -66,6 +66,10 @@ class CommonVerticle : AbstractVerticle() {
         get("/login").handler(BaseHandle.login(provider))
         get("/jwt/getUser").handler(BaseHandle.getUser)
 
+        //模拟B端查询订单列表接口
+        route("/api/im/order/queryMerchantOrder.do").handler(BaseHandle.queryMerchantOrder)
+        //模拟查询商品详情接口
+        route("/api/im/goods/query.do").handler(BaseHandle.query)
     }
 
 }

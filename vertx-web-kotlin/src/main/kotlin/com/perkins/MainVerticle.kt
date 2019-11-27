@@ -43,4 +43,5 @@ class MainVerticle : AbstractVerticle() {
             startFuture.fail(it.cause())
         }
     }
+
 }
