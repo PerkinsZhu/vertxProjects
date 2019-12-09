@@ -11,7 +11,7 @@
 <script src="//cdn.jsdelivr.net/sockjs/1.0.0/sockjs.min.js"></script>
 <script src="vertx-eventbus.js"></script>
 <script>
-    var eb = new EventBus('/eventbus/', {"vertxbus_ping_interval": 5000}); // 设置心跳间隔，默认是5s
+    var eb = new EventBus('http://127.0.0.1:9080/eventbus/', {"vertxbus_ping_interval": 5000}); // 设置心跳间隔，默认是5s
     // var eb = new EventBus('/eventbus/');
     eb.onopen = function() {
 

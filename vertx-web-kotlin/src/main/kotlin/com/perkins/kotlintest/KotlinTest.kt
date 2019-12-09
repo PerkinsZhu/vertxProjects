@@ -25,6 +25,7 @@ import rx.Observable
 import rx.Single
 import rx.plugins.RxJavaCompletableExecutionHook
 import rx.schedulers.Schedulers
+import java.io.File
 //import sun.misc.BASE64Encoder
 import java.lang.RuntimeException
 import java.nio.charset.Charset
@@ -341,7 +342,7 @@ class KotlinTest {
     fun testMD5() {
 //  val id = "zpj-urge-03-1"
 //  val id = "user_id-02"
-        val id = "zpj-massid-05"
+        val id = "UR0000000000021"
         val res = DigestUtils.md5DigestAsHex(id.toByteArray()).substring(8, 24)
         println(res)
     }
@@ -743,6 +744,12 @@ future.setHandler{
         println(JsonObject().remove("sign"))
     }
 
+    @Test
+    fun fileToHexString(){
+        val file = File("D:\\zhupingjing\\testFile\\4bed2e738bd4b31c96d85a4281d6277f9f2ff867.jpg")
+        val array = file.readBytes()
+        println(array.size)
+    }
 }
 
 class A {
