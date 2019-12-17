@@ -750,6 +750,29 @@ future.setHandler{
         val array = file.readBytes()
         println(array.size)
     }
+
+    @Test
+    fun testWhen2() {
+        val a = 0
+        val b = 1
+        val c = 2
+        when {
+            b == 1 -> {
+                println("---b--")
+//                return //return 针对的方法进行return，不是对于 when表达式的return
+            }
+            a == 0 -> {
+                println("---a--")
+            }
+            c == 0 -> {
+                println("---c--")
+            }
+            else -> println("--oo---")
+        }
+        println("--end")
+    }
+
+
 }
 
 class A {

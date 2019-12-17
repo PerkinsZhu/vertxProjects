@@ -147,7 +147,7 @@ dependencies {
     compile group: 'org.apache.poi', name: 'poi-ooxml', version: '4.1.1'
 
     //封装的JWT工具类，支持对称加密
-    compile 'com.kavi:jwt-rsa:1.0.1'
+//    compile 'com.kavi:jwt-rsa:1.0.1'
 }
 
 dependencyManagement {
