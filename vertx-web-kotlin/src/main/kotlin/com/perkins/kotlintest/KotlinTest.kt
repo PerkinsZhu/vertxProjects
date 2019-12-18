@@ -722,30 +722,30 @@ future.setHandler{
     }
 
     @Test
-    fun testSingle(){
+    fun testSingle() {
         Single.just(12).map {
-            45 /0
+            45 / 0
         }
                 .doOnError {
-            println("asdf")
-        }
+                    println("asdf")
+                }
                 .onErrorReturn {
                     println("2222")
-            234
-        }.subscribe({
+                    234
+                }.subscribe({
                     println("------")
-                },{
-            println("0000")
-        })
+                }, {
+                    println("0000")
+                })
     }
 
     @Test
-    fun testJsonGetNull(){
+    fun testJsonGetNull() {
         println(JsonObject().remove("sign"))
     }
 
     @Test
-    fun fileToHexString(){
+    fun fileToHexString() {
         val file = File("D:\\zhupingjing\\testFile\\4bed2e738bd4b31c96d85a4281d6277f9f2ff867.jpg")
         val array = file.readBytes()
         println(array.size)
@@ -770,6 +770,26 @@ future.setHandler{
             else -> println("--oo---")
         }
         println("--end")
+    }
+
+
+    @Test
+    fun testSingleToBlocking() {
+        println("----------")
+        val single = Single.just("11").observeOn(Schedulers.newThread()).map {
+            Thread.sleep(5000)
+            "222"
+        }.map{
+            10 /0
+            println(it)
+        }.onErrorReturn {
+
+            logger.error("----",it)
+        }
+        val blok = single.toBlocking().value()
+        println("---->"+blok)
+
+        println("-----end-----")
     }
 
 
