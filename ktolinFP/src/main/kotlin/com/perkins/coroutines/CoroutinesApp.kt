@@ -15,14 +15,14 @@ class CoroutinesApp : AbstractApp() {
     @Test
     fun coroutineDemo1() {
         println("test func coroutineDemo1")
-        GlobalScope.launch {
+        GlobalScope.launch(Dispatchers.Unconfined) {
             delay(2000)
-            println("coroutine finish")
+            log("coroutine finish")
         }
 
-        println("coroutine start")
+        log("coroutine start")
         Thread.sleep(3000)
-        println("coroutine end")
+        log("coroutine end")
     }
 
     @Test
@@ -311,6 +311,13 @@ class CoroutinesApp : AbstractApp() {
                     log("---$it")
                 }.start()
             }
+        }
+    }
+
+    @Test
+    fun testThread2() {
+        thread(start = true) {
+            println("running from thread(): ${Thread.currentThread()}")
         }
     }
 }
