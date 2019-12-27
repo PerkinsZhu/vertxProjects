@@ -1,0 +1,43 @@
+buildscript {
+//    buildscript中的声明是gradle脚本自身需要使用的资源。可以声明的资源包括依赖项、第三方插件、maven仓库地址等。
+    ext {
+        kotlin_version = '1.1.51'
+        vertx_version = '3.5.4'
+        springVersion = '5.1.8.RELEASE'
+        scalaVersion = '2.12.7'
+        vertx_version = '3.5.4'
+    }
+    repositories {
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+        maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
+        jcenter()
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+
+}
+plugins {
+    id 'java'
+    id 'scala'
+}
+
+group 'com.perkins'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+    maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
+    maven { url 'http://maven.oschina.net/content/groups/public/' }
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.scala-lang:scala-library:$scalaVersion"
+    compile "org.scala-lang:scala-compiler:$scalaVersion"
+    compile "org.scala-lang:scala-reflect:$scalaVersion"
+    compile group: 'junit', name: 'junit', version: '4.12'
+}

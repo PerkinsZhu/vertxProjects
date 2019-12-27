@@ -25,6 +25,7 @@ import rx.Observable
 import rx.Single
 import rx.plugins.RxJavaCompletableExecutionHook
 import rx.schedulers.Schedulers
+import sun.misc.BASE64Encoder
 import java.io.File
 //import sun.misc.BASE64Encoder
 import java.lang.RuntimeException
@@ -792,6 +793,14 @@ future.setHandler{
         println("-----end-----")
     }
 
+    @Test
+    fun testTime2(){
+
+        val a = 1000L * 60 * (60 * 9 -1)
+        val b = 1000L * 60 * 60 * 9
+        println(b-a)
+
+    }
 
 }
 
