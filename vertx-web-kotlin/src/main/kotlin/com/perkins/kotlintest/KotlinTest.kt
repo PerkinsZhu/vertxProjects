@@ -780,28 +780,52 @@ future.setHandler{
         val single = Single.just("11").observeOn(Schedulers.newThread()).map {
             Thread.sleep(5000)
             "222"
-        }.map{
-            10 /0
+        }.map {
+            10 / 0
             println(it)
         }.onErrorReturn {
 
-            logger.error("----",it)
+            logger.error("----", it)
         }
         val blok = single.toBlocking().value()
-        println("---->"+blok)
+        println("---->" + blok)
 
         println("-----end-----")
     }
 
     @Test
-    fun testTime2(){
+    fun testTime2() {
 
-        val a = 1000L * 60 * (60 * 9 -1)
+        val a = 1000L * 60 * (60 * 9 - 1)
         val b = 1000L * 60 * 60 * 9
-        println(b-a)
+        println(b - a)
 
     }
 
+    @Test
+    fun testSequence() {
+        (1 until 10).toList().asSequence().map {
+            println(it)
+            it * 10
+        }
+                .forEach { println(it) }
+    }
+
+
+    @Test
+    fun testMaxBy() {
+        // 查询最大的值，判断条件是列表中的元素 最大值
+        val res = (1 until 10).toList().maxBy {
+            it
+        }
+        println(res)
+        (1 until 10).toList().parallelStream().forEach{
+            Thread.sleep(Int.MAX_VALUE.toLong())
+            it
+        }
+        Thread.sleep(Int.MAX_VALUE.toLong())
+
+    }
 }
 
 class A {

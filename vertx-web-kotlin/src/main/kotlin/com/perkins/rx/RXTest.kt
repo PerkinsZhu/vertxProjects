@@ -1,6 +1,8 @@
 package com.perkins.rx
 
 import io.vertx.core.json.JsonObject
+import io.vertx.rxjava.core.CompositeFuture
+import io.vertx.rxjava.core.Future
 import org.junit.After
 import org.junit.Test
 import rx.Observable
@@ -13,13 +15,15 @@ import java.util.concurrent.TimeUnit
 import rx.functions.Action0
 import rx.functions.Action1
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 
 
 class RXTest {
 
+    var sleep = 15000L
     @After
     fun after() {
-        Thread.sleep(15000)
+        Thread.sleep(sleep)
     }
 
     fun sleep(i: Long? = null) {
@@ -542,28 +546,28 @@ class RXTest {
     fun testZip5() {
         val list = (0 until 10).toList().map {
             Single.just(it).map {
-                println("map-$it---"+Thread.currentThread().name)
+                println("map-$it---" + Thread.currentThread().name)
                 it
             }
         }
 
         val s1 = Single.just(1).map {
-            println("map1---"+Thread.currentThread().name)
+            println("map1---" + Thread.currentThread().name)
             2
         }
         val s2 = Single.just(1).observeOn(Schedulers.newThread()).map {
-            println("map2---"+Thread.currentThread().name)
+            println("map2---" + Thread.currentThread().name)
             2
         }
 
-  /*      Single.zip(s1,s2){ i: Int, i1: Int ->
-            println("zip--" + Thread.currentThread().name)
-        }.subscribe {
-            println("sub--" + Thread.currentThread().name)
-        }*/
+        /*      Single.zip(s1,s2){ i: Int, i1: Int ->
+                  println("zip--" + Thread.currentThread().name)
+              }.subscribe {
+                  println("sub--" + Thread.currentThread().name)
+              }*/
 
-        Single.zip(list){
-            it.forEach{ any ->
+        Single.zip(list) {
+            it.forEach { any ->
                 println(any.javaClass)
                 println(any)
             }
@@ -575,8 +579,8 @@ class RXTest {
 
 
     @Test
-    fun testThread044(){
-       Single.just(1).map{
+    fun testThread044() {
+        Single.just(1).map {
             println(Thread.currentThread().name)
             it
         }.observeOn(Schedulers.computation()).map {
@@ -586,15 +590,43 @@ class RXTest {
             println(Thread.currentThread().name)
             it
         }.observeOn(Schedulers.newThread()).map {
-//           Schedulers.reset()
-           println(Thread.currentThread().name)
-           it
-       }.subscribe{
+            //           Schedulers.reset()
+            println(Thread.currentThread().name)
+            it
+        }.subscribe {
             println(Thread.currentThread().name)
         }
         Thread.sleep(1000)
     }
 
+
+    @Test
+    fun testCompositeFuture() {
+        sleep = 3000
+        val list = (1 until 10).toList().map {
+            val f = Future.future<String> {
+                "$it"
+            }.map {
+                Thread.sleep(1000)
+                println("$it")
+                it.toInt()
+            }
+            f
+        }
+        thread {
+            list.forEach {
+                it.complete()
+            }
+        }.start()
+
+        CompositeFuture.all(list).setHandler {
+            if (it.succeeded()) {
+                println("====end===")
+            } else {
+                it.cause().printStackTrace()
+            }
+        }
+    }
 }
 
 interface OnBind {
