@@ -53,6 +53,7 @@ dependencies {
 
     compile "org.activiti:activiti-engine:6.0.0"
     compile "org.activiti:activiti-spring:6.0.0"
+    compile "org.activiti:activiti-bpmn-layout:6.0.0"
     compile "org.codehaus.groovy:groovy-all:2.4.3"
     compile "org.slf4j:slf4j-jdk14:1.7.6"
     compile "org.slf4j:slf4j-api:1.7.6"
@@ -60,6 +61,7 @@ dependencies {
 
     compile group: 'commons-codec', name: 'commons-codec', version: '1.13'
     compile group: 'org.apache.commons', name: 'commons-lang3', version: ' 3.9'
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
     compile group: 'com.alibaba', name: 'fastjson', version: '1.2.59'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0.pr1'
     compile group: 'io.thekraken', name: 'grok', version: '0.1.5'

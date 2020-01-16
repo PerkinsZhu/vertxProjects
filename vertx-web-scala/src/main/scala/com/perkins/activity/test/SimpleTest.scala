@@ -151,5 +151,40 @@ class SimpleTest {
     })
     return result
   }
+
+  @Test
+  def getModule(): Unit = {
+    rs.createModelQuery().list().forEach(m => {
+      println(m.getName)
+    })
+    rs.createDeploymentQuery().list().forEach(d => {
+      println("deployment" + d.getId)
+      rs.createProcessDefinitionQuery().deploymentId(d.getId).list().forEach(i => {
+        rs.addCandidateStarterUser(i.getId, "") //指定该流程允许哪些用户启动
+        rs.addCandidateStarterGroup("", "") //指定某个流程只能由哪些组启动
+        println(i.getId)
+      })
+    })
+  }
+
+  @Test
+  def startProcess2(): Unit = {
+    val instance = runs.startProcessInstanceById("process:1:11")
+    println(instance.getDeploymentId)
+    println(instance.getBusinessKey)
+  }
+
+  @Test
+  def startTask(): Unit = {
+    ts.createTaskQuery().list().forEach(t => {
+      println(t.getId)
+      ts.claim(t.getId, "user")
+      ts.complete(t.getId)
+    })
+
+
+  }
+
+
 }
 
