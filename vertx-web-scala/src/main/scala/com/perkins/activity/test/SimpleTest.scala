@@ -181,10 +181,18 @@ class SimpleTest {
       ts.claim(t.getId, "user")
       ts.complete(t.getId)
     })
-
-
   }
 
+  @Test
+  def getDefinition(): Unit = {
+
+    rs.createDeploymentQuery().list().forEach(a => {
+      println(a.getId + a.getName + a.getKey)
+    })
+    rs.createProcessDefinitionQuery().list().forEach(a => {
+
+    })
+  }
 
 }
 
