@@ -169,7 +169,7 @@ class SimpleTest {
 
   @Test
   def startProcess2(): Unit = {
-    val instance = runs.startProcessInstanceById("process:1:11")
+    val instance = runs.startProcessInstanceById("simple-01:4:22504")
     println(instance.getDeploymentId)
     println(instance.getBusinessKey)
   }
@@ -185,14 +185,62 @@ class SimpleTest {
 
   @Test
   def getDefinition(): Unit = {
-
     rs.createDeploymentQuery().list().forEach(a => {
       println(a.getId + a.getName + a.getKey)
     })
     rs.createProcessDefinitionQuery().list().forEach(a => {
 
     })
+
   }
+
+  @Test
+  def listAllDefinition(): Unit = {
+
+    rs.createProcessDefinitionQuery().list().forEach(d => {
+      println(d.getId)
+    })
+
+    val pdId = "simple-01:1:4"
+    val instance = runs.startProcessInstanceById(pdId)
+    println(instance.getDeploymentId)
+    println(instance.getBusinessKey)
+    println(instance.getStartTime)
+    println(instance.getStartUserId)
+
+  }
+
+  @Test
+  def claimTask(): Unit = {
+
+    val pdId = "simple-01:4:22504"
+    ts.createTaskQuery().processDefinitionId(pdId).list().forEach(t => {
+      println(t.getId)
+      //      ts.claim(t.getId, "user-2-1")
+      //      ts.unclaim(t.getId)
+      //      ts.addCandidateGroup(t.getId,"")
+      ts.setVariable(t.getId, "day", 12)
+      ts.complete(t.getId)
+      //      ts.setVariableLocal(t.getId,"localVar",123)
+    })
+
+  }
+
+  @Test
+  def listTask(): Unit = {
+    ts.createTaskQuery().list().forEach(t => {
+      println(t.getId)
+      ts.setVariable(t.getId, "day", 12)
+      ts.complete(t.getId)
+    })
+  }
+
+  @Test
+  def stopProcess(): Unit = {
+    val processId = "25001"
+    runs.deleteProcessInstance(processId, "结束")
+  }
+
 
 }
 

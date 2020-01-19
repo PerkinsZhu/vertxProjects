@@ -7,39 +7,89 @@
         <activiti:formProperty id="startTime" name="startTime" type="date" expression="yyyy-MM-dd HH:mm:ss"></activiti:formProperty>
         <activiti:formProperty id="endTime" name="endTime" type="date" expression="yyyy-MM-dd HH:mm:ss"></activiti:formProperty>
         <activiti:formProperty id="reason" name="reason" type="string"></activiti:formProperty>
+        <activiti:formProperty id="day" name="day" type="int"></activiti:formProperty>
       </extensionElements>
     </userTask>
     <userTask id="usertask2" name="领导审批" activiti:assignee="user-2-1" activiti:candidateGroups="group-2"></userTask>
     <endEvent id="endevent1" name="End"></endEvent>
     <sequenceFlow id="flow1" sourceRef="startevent1" targetRef="usertask1"></sequenceFlow>
-    <sequenceFlow id="flow2" sourceRef="usertask1" targetRef="usertask2"></sequenceFlow>
-    <sequenceFlow id="flow3" sourceRef="usertask2" targetRef="endevent1"></sequenceFlow>
+    <userTask id="usertask3" name="人事审批"></userTask>
+    <userTask id="usertask4" name="告知申请人"></userTask>
+    <sequenceFlow id="flow10" sourceRef="usertask4" targetRef="endevent1"></sequenceFlow>
+    <inclusiveGateway id="inclusivegateway1" name="Inclusive Gateway"></inclusiveGateway>
+    <sequenceFlow id="flow11" sourceRef="usertask1" targetRef="inclusivegateway1"></sequenceFlow>
+    <sequenceFlow id="请假大于5天" sourceRef="inclusivegateway1" targetRef="usertask2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${day>5}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow13" sourceRef="inclusivegateway1" targetRef="usertask3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[day<6]]></conditionExpression>
+    </sequenceFlow>
+    <inclusiveGateway id="inclusivegateway2" name="Inclusive Gateway"></inclusiveGateway>
+    <sequenceFlow id="flow14" sourceRef="usertask2" targetRef="inclusivegateway2"></sequenceFlow>
+    <sequenceFlow id="flow15" sourceRef="usertask3" targetRef="inclusivegateway2"></sequenceFlow>
+    <sequenceFlow id="flow16" sourceRef="inclusivegateway2" targetRef="usertask4"></sequenceFlow>
   </process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_simple-01">
     <bpmndi:BPMNPlane bpmnElement="simple-01" id="BPMNPlane_simple-01">
       <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
-        <omgdc:Bounds height="35.0" width="35.0" x="150.0" y="210.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="151.0" y="203.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="usertask1" id="BPMNShape_usertask1">
-        <omgdc:Bounds height="55.0" width="105.0" x="260.0" y="200.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="260.0" y="193.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="usertask2" id="BPMNShape_usertask2">
-        <omgdc:Bounds height="55.0" width="105.0" x="490.0" y="200.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="572.0" y="127.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
-        <omgdc:Bounds height="35.0" width="35.0" x="720.0" y="210.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="1090.0" y="203.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask3" id="BPMNShape_usertask3">
+        <omgdc:Bounds height="55.0" width="105.0" x="583.0" y="275.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask4" id="BPMNShape_usertask4">
+        <omgdc:Bounds height="55.0" width="105.0" x="920.0" y="193.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inclusivegateway1" id="BPMNShape_inclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="450.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inclusivegateway2" id="BPMNShape_inclusivegateway2">
+        <omgdc:Bounds height="40.0" width="40.0" x="780.0" y="200.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
-        <omgdi:waypoint x="185.0" y="227.0"></omgdi:waypoint>
-        <omgdi:waypoint x="260.0" y="227.0"></omgdi:waypoint>
+        <omgdi:waypoint x="186.0" y="220.0"></omgdi:waypoint>
+        <omgdi:waypoint x="260.0" y="220.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
-        <omgdi:waypoint x="365.0" y="227.0"></omgdi:waypoint>
-        <omgdi:waypoint x="490.0" y="227.0"></omgdi:waypoint>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="1025.0" y="220.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1090.0" y="220.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
-        <omgdi:waypoint x="595.0" y="227.0"></omgdi:waypoint>
-        <omgdi:waypoint x="720.0" y="227.0"></omgdi:waypoint>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="365.0" y="220.0"></omgdi:waypoint>
+        <omgdi:waypoint x="450.0" y="220.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="请假大于5天" id="BPMNEdge_请假大于5天">
+        <omgdi:waypoint x="470.0" y="200.0"></omgdi:waypoint>
+        <omgdi:waypoint x="470.0" y="154.0"></omgdi:waypoint>
+        <omgdi:waypoint x="572.0" y="154.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="470.0" y="240.0"></omgdi:waypoint>
+        <omgdi:waypoint x="470.0" y="302.0"></omgdi:waypoint>
+        <omgdi:waypoint x="583.0" y="302.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow14" id="BPMNEdge_flow14">
+        <omgdi:waypoint x="677.0" y="154.0"></omgdi:waypoint>
+        <omgdi:waypoint x="800.0" y="154.0"></omgdi:waypoint>
+        <omgdi:waypoint x="800.0" y="200.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow15" id="BPMNEdge_flow15">
+        <omgdi:waypoint x="688.0" y="302.0"></omgdi:waypoint>
+        <omgdi:waypoint x="800.0" y="302.0"></omgdi:waypoint>
+        <omgdi:waypoint x="800.0" y="240.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow16" id="BPMNEdge_flow16">
+        <omgdi:waypoint x="820.0" y="220.0"></omgdi:waypoint>
+        <omgdi:waypoint x="920.0" y="220.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
