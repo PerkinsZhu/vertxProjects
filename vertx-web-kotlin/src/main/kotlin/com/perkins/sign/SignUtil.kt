@@ -64,17 +64,21 @@ class SignUtil {
             }
             JsonArray(temp)
         } else {
-            val obj = data as JsonObject
-            obj.sortedBy { it.key }.map {
-                if (it.value is JsonObject || it.value is JsonArray) {
-                    val temp = sortJson(it.value)
-                    JsonObject().put(it.key, temp)
-                } else {
-                    JsonObject().put(it.key, it.value)
+            if (data is JsonObject) {
+                data.sortedBy { it.key }.map {
+                    if (it.value is JsonObject || it.value is JsonArray) {
+                        val temp = sortJson(it.value)
+                        JsonObject().put(it.key, temp)
+                    } else {
+                        JsonObject().put(it.key, it.value)
+                    }
+                }.fold(JsonObject()) { a, b ->
+                    a.mergeIn(b)
                 }
-            }.fold(JsonObject()) { a, b ->
-                a.mergeIn(b)
+            } else {
+                data
             }
+
         }
     }
 

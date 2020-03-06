@@ -1,13 +1,10 @@
 {
-  "platform": 4,
-  "list": [
-    {
-      "account_id": "zpj-urge-01",
-      "agent_id": "zpj-urge-05-1",
-      "agent_name": "zpj-urge-05-1",
-      "leave_start_time": 1571132804602,
-      "leave_end_time": 1573885705000,
-      "platform": 4
-    }
+  "page": 1,
+  "limit": 10,
+  "userId": "Jin",
+  "userName": "平",
+  "mobileList": [
+    "1762110",
+    "51622"
   ]
 }

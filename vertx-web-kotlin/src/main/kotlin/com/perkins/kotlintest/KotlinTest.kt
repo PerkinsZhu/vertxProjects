@@ -1,6 +1,7 @@
 package com.perkins.kotlintest
 
 import com.alibaba.fastjson.JSONObject
+import com.ctrip.framework.apollo.ConfigService
 import com.hazelcast.client.impl.protocol.codec.AtomicReferenceIsNullCodec
 import com.perkins.bean.User
 import com.perkins.common.PropertiesUtil
@@ -826,6 +827,45 @@ future.setHandler{
         Thread.sleep(Int.MAX_VALUE.toLong())
 
     }
+
+    @Test
+    fun testSingleError(){
+        Single.just(1).map {
+            logger.info("-[[")
+            2
+        }.flatMap {
+            Single.error<Int>(RuntimeException("SDDD"))
+        }.subscribe({
+            logger.info("--rsulut$it")
+        },{
+            logger.error("====",it)
+        })
+
+        Thread.sleep(20000)
+    }
+
+
+    @Test
+    fun testTime3(){
+        val a = LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
+        println(a)
+        println(LocalDateTime.now())
+        println(LocalDateTime.now().toInstant(ZoneOffset.UTC))
+        println(LocalDateTime.now().toInstant(ZoneOffset.ofHours(8)).toEpochMilli())
+        println(LocalDateTime.now().toInstant(ZoneOffset.ofHours(0)).toEpochMilli())
+        println(System.currentTimeMillis())
+    }
+
+    @Test
+    fun testApolloConfig(){
+        val config = ConfigService.getAppConfig(); //config instance is singleton for each namespace and is never null
+        val someKey = "someKeyFromDefaultNamespace";
+        val someDefaultValue = "someDefaultValueForTheKey";
+        val value = config.getProperty(someKey, someDefaultValue);
+        println(value)
+    }
+
+
 }
 
 class A {

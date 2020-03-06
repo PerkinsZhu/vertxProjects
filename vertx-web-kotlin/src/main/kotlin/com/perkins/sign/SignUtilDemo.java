@@ -104,7 +104,11 @@ public class SignUtilDemo {
         } else if (json instanceof com.alibaba.fastjson.JSONArray) {
             JSONArray array = new JSONArray();
             ((JSONArray) json).forEach((Object o) -> {
-                array.add(jsonSort((JSON) o));
+                if (o instanceof JSONObject) {
+                    array.add(jsonSort((JSON) o));
+                } else {
+                    array.add(o);
+                }
             });
             return array;
         } else {
