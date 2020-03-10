@@ -131,7 +131,6 @@ dependencies {
     compile "com.google.dagger:dagger:2.10"
     kapt "com.google.dagger:dagger-compiler:2.10"
 
-    compile "org.mongodb:mongodb-crypt:1.0.0-beta4"
     // https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-core
 //    compile group: 'org.mongodb', name: 'mongodb-driver-core', version: '3.11.2'
     // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
@@ -157,6 +156,12 @@ dependencies {
 
     implementation 'com.ctrip.framework.apollo:apollo-client:1.1.0'
 
+    compile 'org.mongodb:mongodb-crypt:1.0.1'
+// https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
+    compile 'org.mongodb:mongodb-driver-sync:3.12.2'
+    compile 'org.mongodb:mongodb-driver-legacy:3.12.2'
+    compile 'org.mongodb:mongodb-driver:3.12.2'
+    compile 'org.mongodb:mongo-java-driver:3.12.2'
 
 
 
